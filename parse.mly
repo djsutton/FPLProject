@@ -26,7 +26,9 @@ let error msg	= failwith msg
 %token LETREC
 %token IN
 %token LPAREN
-%token RPAREN
+%token RPAREN  
+%token LBRACE
+%token RBRACE
 
 %token EOF
 
@@ -38,25 +40,29 @@ let error msg	= failwith msg
 
 %%
 
+exp : 
+  app                                        { $1 }
+| lambda                                     { Lambda (fst $1, snd $1) }
+| COND LPAREN exp COMMA exp COMMA exp RPAREN { Cond($2,$4,$6) }
+| LBRACE statement IN exp RBRACE             { Letrec($2, $4, $6) }
+;
 const : 
   INT                                        { Int $1 }
 | TRUE                                       { Bool true }
 | FALSE                                      { Bool false }
-
-exp : 
-  app                                        { $1 }
-| lambda                                     { Lambda (fst $1, snd $1) }
-| IF exp THEN exp ELSE exp                   { Cond($2,$4,$6) }
-| LETREC IDENTIFIER EQ_TOK lambda IN exp     { Letrec($2, $4, $6) }
 ;
 app:
   atom                                       { $1 }
 | app atom                                   { Appl ($1,$2) }
 ;
 atom: 
-  const                                  { Const($1) }
+  const                                      { Const($1) }
 | IDENTIFIER                                 { Var($1) }
 | LPAREN exp RPAREN                          { $2 } 
 ;
 lambda : LAMBDA IDENTIFIER DOT exp           { ($2,$4) }
+;
+statement : /*empty*/                        { [] }
+| IDENTIFIER EQ exp                          { }
+| statement STMTSEP statement                { }
 ;
