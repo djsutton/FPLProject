@@ -7,9 +7,18 @@
 
 open Printf 
 
-type var = string
+type var  = string
 
-type const = Int of int | Bool of bool
+type const = Int of int | Bool of bool |
+
+type opr = 
+  | Add 
+  | Sub
+  | Mult
+  | Equal
+
+type builtIn = 
+  | Cons 
 
 type exp =
   | Const of const
@@ -17,14 +26,21 @@ type exp =
   | Appl of exp * exp
   | Lambda of var * exp
   | Cond of exp * exp * exp
-  | Letrec of var * (var * exp) * exp 
+  | Letrec of stmt * exp
+  | Pfk of opr * exp * exp
+  | Cnk of builtIn * exp list 
+
+and stmt = Bind of var * exp | Par of stmt * stmt
 
 type value =
   | Integer of int
   | Boolean of bool
-  | Funval of (value -> value)
+  | Funval of var * exp
+  | CnkVal of se list
 
-
+and se = 
+  | Value of value
+  | Ident of var  
 
 let string_of_const c =
   match c with
