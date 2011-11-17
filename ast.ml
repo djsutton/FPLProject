@@ -47,6 +47,14 @@ let string_of_const c =
     | Int i -> sprintf "%d" i
     | Bool b -> if b then "true" else "false"
 
+let rec opr_to_str op =
+    match op with
+      | Add -> "+"
+      | Sub -> "-"
+      | Mult -> "*"
+      | Equal -> "="
+
+
 let rec exp_to_str e = 
   match e with
   | Const(n) -> string_of_const n
@@ -61,6 +69,13 @@ let rec exp_to_str e =
   | Letrec (x, (y,e0), e1) ->
       sprintf "let %s = (lambda %s. %s) in %s"
 	x y (exp_to_str e0) (exp_to_str e1)
+  | Pfk(op, e1, e2) ->
+    sprintf "%s(%s, %s)" (opr_to_string op) (exp_to_str e1) (exp_to_str e2)
+  | Cnk(bi expList) -> 
+    sprintf "%s(%s)" (builtIn_to_str bi) (expList_to_str expList)
+    
+let rec expList_to_str expList = 
+  (String.concat "," (List.map exp_to_str expList))
 
 let rec val_to_str v =
   match v with
