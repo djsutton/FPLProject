@@ -19,7 +19,7 @@ let error msg	= failwith msg
 %token DOT
 %token TRUE
 %token FALSE
-%token EQ_TOK
+%token EQ
 %token IF
 %token THEN
 %token ELSE
@@ -29,40 +29,57 @@ let error msg	= failwith msg
 %token RPAREN  
 %token LBRACE
 %token RBRACE
+%token COMMA
+%token CONS
 
 %token EOF
 
 %start exp
 %type <Ast.exp> exp
 
-%left EQ_TOK
+%left EQ
 
 
 %%
 
 exp : 
-  app                                        { $1 }
-| lambda                                     { Lambda (fst $1, snd $1) }
-| COND LPAREN exp COMMA exp COMMA exp RPAREN { Cond($2,$4,$6) }
+  IDENTIFIER                                 { Var($1) }
+| LPAREN exp RPAREN                          { $2 }
+| exp exp                                    { Appl ($1,$2) }
+| LAMBDA IDENTIFIER DOT exp                  { Lambda($2,$4) }
 | LBRACE statement IN exp RBRACE             { Letrec($2, $4, $6) }
+| COND LPAREN exp COMMA exp COMMA exp RPAREN { Cond($2,$4,$6) }
+| pfk                                        { $1 }
+| const                                      { Const($1) }
+| cnk                                        { }
 ;
+
+statement : /*empty*/                        { [] }
+| IDENTIFIER EQ exp                          { }
+| statement STMTSEP statement                { }
+;
+
+pfk:
+  PLUS LPAREN exp COMMA exp RPAREN           { Pfk(Add,$3,$5)}
+| MINUS LPAREN exp COMMA exp RPAREN          { Pfk(Sub,$3,$5)}
+;
+
 const : 
   INT                                        { Int $1 }
 | TRUE                                       { Bool true }
 | FALSE                                      { Bool false }
 ;
-app:
-  atom                                       { $1 }
-| app atom                                   { Appl ($1,$2) }
+
+cnk:
+  CONS LPAREN args RPAREN
+|                                            { }
 ;
-atom: 
-  const                                      { Const($1) }
-| IDENTIFIER                                 { Var($1) }
-| LPAREN exp RPAREN                          { $2 } 
+
+args : /* empty */                                  { [] }
+| some_args                                         { $1 }
 ;
-lambda : LAMBDA IDENTIFIER DOT exp           { ($2,$4) }
-;
-statement : /*empty*/                        { [] }
-| IDENTIFIER EQ exp                          { }
-| statement STMTSEP statement                { }
+
+some_args:
+| exp COMMA some_args                                    { $1::$3 }
+| exp                                               { [$1]}
 ;

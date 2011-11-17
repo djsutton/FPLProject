@@ -21,8 +21,9 @@ rule initial = parse
 | "true"        { TRUE }
 | "false"       { FALSE }
 | "="           { EQ }
-| "Cond"          { COND }
+| "Cond"        { COND }
 | "in"          { IN }
+| "cons"        { CONS }
 | "lambda"      { LAMBDA }
 | "\\lambda"    { LAMBDA }
 | '('           { LPAREN }
