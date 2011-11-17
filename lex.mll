@@ -33,6 +33,10 @@ rule initial = parse
 | '.'           { DOT } 
 | ','           { COMMA } 
 | ';'           { STMTSEP }
+| '+'           { PLUS }
+| '-'           { MINUS }
+| '*'           { MULT }
+| ','           { COMMA }
 
 | ("0x")?'-'?['0'-'9']+ {
   let str = Lexing.lexeme lexbuf in 

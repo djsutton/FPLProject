@@ -31,6 +31,10 @@ let error msg	= failwith msg
 %token RBRACE
 %token COMMA
 %token CONS
+%token PLUS
+%token MINUS
+%token MULT
+%token COMMA
 
 %token EOF
 
@@ -47,21 +51,22 @@ exp :
 | LPAREN exp RPAREN                          { $2 }
 | exp exp                                    { Appl ($1,$2) }
 | LAMBDA IDENTIFIER DOT exp                  { Lambda($2,$4) }
-| LBRACE statement IN exp RBRACE             { Letrec($2, $4, $6) }
+| LBRACE statement IN exp RBRACE             { Letrec($2,$4) }
 | COND LPAREN exp COMMA exp COMMA exp RPAREN { Cond($2,$4,$6) }
 | pfk                                        { $1 }
 | const                                      { Const($1) }
-| cnk                                        { }
+| cnk                                        { Cnk($)}
 ;
 
 statement : /*empty*/                        { [] }
-| IDENTIFIER EQ exp                          { }
-| statement STMTSEP statement                { }
+| IDENTIFIER EQ exp                          { Bind($1,$3) }
+| statement STMTSEP statement                { Par($1,$3) }
 ;
 
 pfk:
   PLUS LPAREN exp COMMA exp RPAREN           { Pfk(Add,$3,$5)}
 | MINUS LPAREN exp COMMA exp RPAREN          { Pfk(Sub,$3,$5)}
+| MULT LPAREN exp COMMA exp RPAREN           { Pfk(Mult,$3,$5)}
 ;
 
 const : 
@@ -71,15 +76,14 @@ const :
 ;
 
 cnk:
-  CONS LPAREN args RPAREN
-|                                            { }
+| CONS LPAREN args RPAREN                    { Cnk(Cons,$3) }
 ;
 
-args : /* empty */                                  { [] }
-| some_args                                         { $1 }
+args : /* empty */                           { [] }
+| some_args                                  { $1 }
 ;
 
 some_args:
-| exp COMMA some_args                                    { $1::$3 }
-| exp                                               { [$1]}
+| exp COMMA some_args                        { $1::$3 }
+| exp                                        { [$1] }
 ;
