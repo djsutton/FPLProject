@@ -28,33 +28,8 @@ let main () =
   let prog = Parse.exp Lex.initial lexbuf in
   if not !silent then begin 
     print_endline (Ast.exp_to_str prog) ; 
-  end ; 
-  let initenv x = 
-    if x = "succ" then 
-      Ast.Funval (fun a -> 
-		    match a with
-			Ast.Integer n -> Ast.Integer (n + 1)
-		      | _ -> raise Error)
-    else if x = "pred" then 
-      Ast.Funval (fun a -> 
-		    match a with
-			Ast.Integer n -> Ast.Integer (n - 1)
-		      | _ -> raise Error)
-    else if x = "equal" then
-      Ast.Funval (fun a -> 
-		    match a with 
-			Ast.Integer n ->
-			  Ast.Funval
-			    (fun b -> 
-			       match b with 
-				   Ast.Integer m ->
-				     Ast.Boolean (n = m)
-				 | _ -> raise Error)
-		      | _ -> raise Error)
-    else raise Error
-  in 
-  let v = Hw5.eval prog initenv in
-    printf "%s\n" (Ast.val_to_str v);
+  end ;
+  printf "%s\n" (Ast.exp_to_str prog);
   exit 0 
 ;;
 main () ;;

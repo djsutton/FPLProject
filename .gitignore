@@ -1,0 +1,14 @@
+*.cmi
+*.cmx
+*.o
+*.cmo
+*~
+.*
+lex.ml
+parse.ml
+parse.mli
+fun
+fun.exe
+test-result
+test-answer
+hello hello.exe
