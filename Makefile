@@ -52,13 +52,13 @@ main.cmx : eval.cmi eval.ml parse.cmi
 
 test: all test1 test2 test3 test4 test5 test6 test7
 
-TEST1 = "'succ 0'" 
+TEST1 = "'+(0,1)'" 
 test1:
 	@echo "1" > test-answer
 	@echo "$(TEST1)" | ./lambdac --silent > test-result
 	@if diff -b -w test-result test-answer ; then echo "*** test1 passed" ; else echo "*** test1 FAILED: $(TEST1)" ; fi 
 
-TEST2 = "'equal 0 0'" 
+TEST2 = "'=(0,0)'" 
 test2:
 	@echo "true" > test-answer
 	@echo "$(TEST2)" | ./lambdac --silent > test-result

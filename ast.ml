@@ -76,8 +76,8 @@ let rec exp_to_str e =
   | Lambda(x,e) ->
       sprintf "(lambda %s. %s)" x (exp_to_str e)
   | Cond(e0,e1,e2) ->
-      sprintf "if %s then %s else %s"
-	(exp_to_str e0) (exp_to_str e1) (exp_to_str e2)
+      sprintf "Cond(%s, %s, %s)"
+    (exp_to_str e0) (exp_to_str e1) (exp_to_str e2)
   | Letrec (s,e) ->
       sprintf "{%s in %s}" (stmt_to_str s) (exp_to_str e)
   | Pfk(op, e1, e2) ->

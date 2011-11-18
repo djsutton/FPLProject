@@ -23,7 +23,7 @@ rule initial = parse
 | "="           { EQ }
 | "Cond"        { COND }
 | "in"          { IN }
-| "cons"        { CONS }
+| "Cons"        { CONS }
 | "lambda"      { LAMBDA }
 | "\\lambda"    { LAMBDA }
 | '('           { LPAREN }

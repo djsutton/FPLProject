@@ -69,6 +69,7 @@ pfk:
   PLUS LPAREN exp COMMA exp RPAREN           { Pfk(Add,$3,$5)}
 | MINUS LPAREN exp COMMA exp RPAREN          { Pfk(Sub,$3,$5)}
 | MULT LPAREN exp COMMA exp RPAREN           { Pfk(Mult,$3,$5)}
+| EQ LPAREN exp COMMA exp RPAREN             { Pfk(Equal,$3,$5)}
 ;
 
 const : 
