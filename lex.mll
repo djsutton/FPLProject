@@ -20,17 +20,23 @@ rule initial = parse
 | blank { initial lexbuf }
 | "true"        { TRUE }
 | "false"       { FALSE }
-| "="           { EQ_TOK }
-| "if"          { IF }
-| "then"        { THEN }
-| "else"        { ELSE }
-| "letrec"      { LETREC }
+| "="           { EQ }
+| "Cond"        { COND }
 | "in"          { IN }
+| "Cons"        { CONS }
 | "lambda"      { LAMBDA }
 | "\\lambda"    { LAMBDA }
 | '('           { LPAREN }
 | ')'           { RPAREN } 
+| '{'           { LBRACE }
+| '}'           { RBRACE } 
 | '.'           { DOT } 
+| ','           { COMMA } 
+| ';'           { STMTSEP }
+| '+'           { PLUS }
+| '-'           { MINUS }
+| '*'           { MULT }
+| ','           { COMMA }
 
 | ("0x")?'-'?['0'-'9']+ {
   let str = Lexing.lexeme lexbuf in 
