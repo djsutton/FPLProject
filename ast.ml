@@ -1,25 +1,31 @@
 (* CSCI 5535
  *
- * Implementation of CBV Lambda Calculus from Reynold's
- * Definitional Interpreters.
+ * Implementation of the syntax tree for parallel lambda 
+ * calculus 
  *
+ * By DJ Sutton and Matt Ripley
  *)
 
 open Printf 
 
+(* variable type *)
 type var  = string
 
+(* constant type *) 
 type const = Int of int | Bool of bool
 
+(* primitive operator type *)
 type opr = 
   | Add 
   | Sub
   | Mult
   | Equal
 
+(* Built in functions *)
 type builtIn = 
-  | Cons 
+  | Cons (* Constructor operator. Constructs list out of CSV's *)
 
+(* expression type *)
 type exp =
   | Const of const
   | Var of var
@@ -30,17 +36,21 @@ type exp =
   | Pfk of opr * exp * exp
   | Cnk of builtIn * exp list 
 
+(* Statment type *)
 and stmt = Bind of var * exp | Par of stmt * stmt
 
+(* Value types as defined in the paper *)
 type value =
   | Integer of int
   | Boolean of bool
   | Funval of var * exp
   | CnkVal of se list
-
+(* "Simple" expressions as defined in the paper *)
 and se = 
   | Value of value
   | Ident of var  
+
+(* Functions to convert AST into a string *)
 
 let string_of_const c =
   match c with
