@@ -29,7 +29,8 @@ let main () =
   if not !silent then begin 
     print_endline (Ast.exp_to_str prog) ; 
   end ;
-  printf "%s\n" (Ast.exp_to_str prog);
+  let result = Eval.eval prog in
+  printf "%s\n" (Ast.val_to_str result);
   exit 0 
 ;;
 main () ;;

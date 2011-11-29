@@ -12,11 +12,22 @@ exception ConditionalTypeError
 
 exception EvalTypeError
 
-let ext (z: var) (a: value) (e: var -> value)=
-    (fun x -> if x = z then a else (e x))
+let rec sub (e : exp) (v : var) (r : exp) : exp = match r with
+  | Const n -> r
+  | Var x -> if x = v then e else r
+  | Appl (e1, e2) -> Appl(sub e v e1, sub e v e2)
+  | Lambda (x,e1) -> if x = v then r else Lambda (x, sub e v e1)
+  | Cond (prem, conc, altr) ->
+        Cond (sub e v prem, sub e v conc, sub e v altr)
 
-let rec 
-eval (r: exp) (e: var -> value) : value = match r with
+
+(*
+and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
+  | Bind 
+  | Par
+*)
+
+let rec eval (r: exp) : value = match r with
     Const (Int n) -> Integer n
   | Const (Bool b) -> Boolean b
   | Var x -> e x

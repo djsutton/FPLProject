@@ -50,7 +50,13 @@ main.cmx : eval.cmi eval.ml parse.cmi
 
 .PHONY: test1 test2 test3 test4 test5 test6 test7
 
-test: all test1 test2 test3 test4 test5 test6 test7
+test: all test0 test1 test2 test3 test4 test5 test6 test7
+
+TEST0 = "'42'" 
+test0:
+	@echo "42" > test-answer
+	@echo "$(TEST0)" | ./lambdac --silent > test-result
+	@if diff -b -w test-result test-answer ; then echo "*** test0 passed" ; else echo "*** test0 FAILED: $(TEST0)" ; fi 
 
 TEST1 = "'+(0,1)'" 
 test1:
