@@ -50,8 +50,18 @@ and se =
   | Value of value
   | Ident of var  
 
-(* Functions to convert AST into a string *)
+type ctx = 
+  | Hole
+  | ApplyLeftCtx of ctx * exp
+  | ApplyRightCtx of exp * ctx
+  | CondCtx of ctx * exp * exp
 
+type sctx = 
+  | Hole
+  | BindCtx of var * ctx 
+  | ParCtx of sctx * sctx
+
+(* Functions to convert AST into a string *)
 let string_of_const c =
   match c with
     | Int i -> sprintf "%d" i
