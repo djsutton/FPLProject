@@ -6,7 +6,7 @@
 
 open Ast
 
-exception ApplicationTypeError
+exception SubTypeError
 
 exception ConditionalTypeError
 
@@ -16,9 +16,11 @@ let rec sub (e : exp) (v : var) (r : exp) : exp = match r with
   | Const n -> r
   | Var x -> if x = v then e else r
   | Appl (e1, e2) -> Appl(sub e v e1, sub e v e2)
-  | Lambda (x,e1) -> if x = v then r else Lambda (x, sub e v e1)
+  | Lambda (x, e1) -> if x = v then r else Lambda (x, sub e v e1)
   | Cond (prem, conc, altr) ->
         Cond (sub e v prem, sub e v conc, sub e v altr)
+  | Letrec(s, e1) -> Letrec(sub_stmt e v s, sub e v e1)
+  | _ -> raise SubTypeError
 
 and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
   | Bind(vName, e1) -> if vName = v then s else Bind(vName, e) 
