@@ -20,12 +20,10 @@ let rec sub (e : exp) (v : var) (r : exp) : exp = match r with
   | Cond (prem, conc, altr) ->
         Cond (sub e v prem, sub e v conc, sub e v altr)
 
-
-(*
 and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
-  | Bind 
-  | Par
-*)
+  | Bind(vName, e1) -> if vName = v then s else Bind(vName, e) 
+  | Par(s1, s2) -> Par(sub_stmt e v s1, sub_stmt e v s2)
+
 
 let rec eval (r: exp) : value = match r with
     Const (Int n) -> Integer n
