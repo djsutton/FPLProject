@@ -49,7 +49,7 @@ let error msg	= failwith msg
 %%
 
 exp : 
-  IDENTIFIER                                 { Var($1) }
+  IDENTIFIER                                 { Var($1, 0) }
 | LPAREN exp RPAREN                          { $2 }
 | exp exp                                    { Appl ($1,$2) }
 | LAMBDA IDENTIFIER DOT exp                  { Lambda($2,$4) }
