@@ -77,14 +77,16 @@ let opr_to_str op =
       | Mult -> "*"
       | Equal -> "="
 
+let var_to_str v = sprintf "%s_%d" (fst v) (snd v)
+
 let rec exp_to_str e = 
   match e with
   | Const(n) -> string_of_const n
-  | Var(l) -> l
+  | Var(v) -> var_to_str v
   | Appl(e0,e1) ->
       sprintf "(%s %s)" (exp_to_str e0) (exp_to_str e1)
   | Lambda(x,e) ->
-      sprintf "(lambda %s. %s)" x (exp_to_str e)
+      sprintf "(lambda %s. %s)" (var_to_str x) (exp_to_str e)
   | Cond(e0,e1,e2) ->
       sprintf "Cond(%s, %s, %s)"
     (exp_to_str e0) (exp_to_str e1) (exp_to_str e2)
@@ -99,7 +101,7 @@ and expList_to_str expList =
   (String.concat "," (List.map exp_to_str expList))
 
 and stmt_to_str s = match s with
-  | Bind(v,e) -> sprintf "%s = %s" v (exp_to_str e)
+  | Bind(v,e) -> sprintf "%s = %s" (var_to_str v) (exp_to_str e)
   | Par(s0,s1) -> sprintf "%s ; %s" (stmt_to_str s0) (stmt_to_str s1)
 
 let rec val_to_str v =
