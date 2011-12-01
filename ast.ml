@@ -9,7 +9,7 @@
 open Printf 
 
 (* variable type *)
-type var  = string * int 
+type var  = string * int
 
 (* constant type *) 
 type const = Int of int | Bool of bool
