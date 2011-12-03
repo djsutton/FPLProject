@@ -29,8 +29,8 @@ let main () =
   if not !silent then begin 
     print_endline (Ast.exp_to_str prog) ; 
   end ;
-  let result = Eval.isSimp prog in
-  printf "%b\n" (result);
+  let result = Eval.reduce 10 prog in
+  printf "%s\n" (Ast.exp_to_str result);
   exit 0 
 ;;
 main () ;;

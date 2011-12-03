@@ -6,10 +6,10 @@
 open Ast
 
 exception SubTypeError
-
 exception ConditionalTypeError
-
 exception EvalTypeError
+exception PfkTypeError
+exception NotImplemented
 
 (* Checks to see if a list of expressions are all simple expression types *) 
 let rec isSimp (e:exp) : bool =
@@ -22,7 +22,8 @@ let rec isSimp (e:exp) : bool =
     | _ -> false
 
 (* substitute e for v in R *)
-let rec sub (e : exp) (v : var) (r : exp) : exp = match r with
+let rec sub (e : exp) (v : var) (r : exp) : exp = 
+  match r with
   | Const n -> r
   | Var x -> if x = v then e else r
   | Appl (e1, e2) -> Appl(sub e v e1, sub e v e2)
@@ -35,6 +36,39 @@ let rec sub (e : exp) (v : var) (r : exp) : exp = match r with
 and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
   | Bind(vName, e1) -> if vName = v then s else Bind(vName, e) 
   | Par(s1, s2) -> Par(sub_stmt e v s1, sub_stmt e v s2)
+
+let evalPfk (op: opr) (e1:exp) (e2:exp) : exp = 
+  match (e1, e2) with 
+    | (Const(Int(n)), Const(Int(m))) -> 
+      (match op with 
+	| Add -> Const(Int(n+m))
+	| Sub -> Const(Int(n-m))
+	| Mult -> Const(Int(n*m))
+	| Equal -> Const(Bool(n=m))
+      ) 
+    | (Const(Bool(b1)), Const(Bool(b2))) ->
+      (match op with
+	| Equal -> Const(Bool(b1 = b2))
+      )
+    | (Const(Bool(b1)), Const(Int(b2))) -> raise PfkTypeError
+    | (Const(Int(b1)), Const(Bool(b2))) -> raise PfkTypeError
+    | (_, _) -> Pfk(op, e1, e2)
+
+
+let rec reduce (n:int) (e:exp) : exp = 
+  if isSimp e || n = 0 then 
+    e 
+  else
+    match e with 
+      | Letrec(s, body) -> raise NotImplemented
+      | Cond(cond, tExp, fExp) -> raise NotImplemented
+      | Appl(e1, e2) -> raise NotImplemented
+      | Cnk(bIn, expList) -> 
+	Cnk(bIn, List.map (reduce (n-1)) expList)
+      | Pfk(op, e1, e2) -> 
+	let e1' = reduce (n-1) e1 in 
+	let e2' = reduce (n-1) e2 in 
+	evalPfk op e1 e2
 
 
 (*let rec eval (r: exp) : value = match r with
