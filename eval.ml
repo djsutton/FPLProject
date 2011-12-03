@@ -54,6 +54,56 @@ let evalPfk (op: opr) (e1:exp) (e2:exp) : exp =
     | (Const(Int(b1)), Const(Bool(b2))) -> raise PfkTypeError
     | (_, _) -> Pfk(op, e1, e2)
 
+let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt = 
+  match s with 
+    | Bind (v1, e1) -> 
+      if v1 = v then
+	Bind(nv, alphaRename v nv e1)
+      else
+	Bind(v1, alphaRename v nv e1)
+    | Par (s1, s2) -> 
+      let s1' = alphaRenameStmt v nv s1 in
+      let s2' = alphaRenameStmt v nv s2 in 
+      Par(s1', s2')
+
+let rec alphaRename (v:var) (nv:var) (e:exp) : exp=  
+  match e with 
+    | Const(n) -> e
+    | Var(x) -> 
+      if x = v then 
+	Var(nv)
+      else
+	e
+
+    | Appl(e1, e2) -> Appl( (alphaRename v nv e1), (alphaRename v nv e2))
+    | Lambda(v1, body) -> 
+      let b = alphaRename body v nv in 
+      if v1 = v then 
+	Lambda(nv, b)
+      else
+	Lambda(v1, b)
+	
+    | Cond(bVal, tExp, fExp) ->
+      let nbVal = alphaRename v nv bVal in
+      let ntExp = alphaRename v nv tExp in 
+      let nfExpt = alphaRename v nv fExp in 
+      Cond(nbVal, ntExp, nfExpt)
+
+    | Letrec(s, e1) ->
+      let s' = alphaRenameStmt v nv s in 
+      let e1' = alphaRename v nv e1 in 
+      Letrec(s', e1')
+
+    | Pfk(op, e1, e2) -> 
+      let e1' = alphaRename v nv e1 in 
+      let e2' = alphaRename v nv e2 in 
+      Pfk(op, e1', e2')
+    | Cnk(bIn, expList) -> 
+      List.map (alphaRename v nv) expList
+
+let mangle (e:exp) (v:var) : exp = 
+  let newVar =  ( (fst v),  (snd v) +1 ) in 
+  alphaRename e v newVar
 
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
