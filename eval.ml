@@ -61,14 +61,22 @@ let rec reduce (n:int) (e:exp) : exp =
   else
     match e with 
       | Letrec(s, body) -> raise NotImplemented
-      | Cond(cond, tExp, fExp) -> raise NotImplemented
+      | Cond(cond, tExp, fExp) -> 
+	let c = reduce (n-1) cond in 
+	(match c with
+	  | Const(Bool(b)) -> 
+	    if b then 
+	      reduce (n-1) tExp 
+	    else
+	      reduce (n-1) fExp
+	)
       | Appl(e1, e2) -> raise NotImplemented
       | Cnk(bIn, expList) -> 
 	Cnk(bIn, List.map (reduce (n-1)) expList)
       | Pfk(op, e1, e2) -> 
 	let e1' = reduce (n-1) e1 in 
 	let e2' = reduce (n-1) e2 in 
-	evalPfk op e1 e2
+	evalPfk op e1' e2'
 
 
 (*let rec eval (r: exp) : value = match r with
