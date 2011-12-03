@@ -52,7 +52,7 @@ exp :
   IDENTIFIER                                 { Var(($1, 0)) }
 | LPAREN exp RPAREN                          { $2 }
 | exp exp                                    { Appl ($1,$2) }
-| LAMBDA IDENTIFIER DOT exp                  { Lambda($2,$4) }
+| LAMBDA IDENTIFIER DOT exp                  { Lambda( ($2,0) ,$4) }
 | LBRACE statement IN exp RBRACE             { Letrec($2,$4) }
 | COND LPAREN exp COMMA exp COMMA exp RPAREN { Cond($3,$5,$7) }
 | pfk                                        { $1 }
@@ -61,7 +61,7 @@ exp :
 ;
 
 statement : 
-  IDENTIFIER EQ exp                          { Bind($1,$3) }
+  IDENTIFIER EQ exp                          { Bind( ($1,0) ,$3) }
 | statement STMTSEP statement                { Par($1,$3) }
 ;
 

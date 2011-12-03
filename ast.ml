@@ -44,7 +44,8 @@ type value =
   | Integer of int
   | Boolean of bool
   | Funval of var * exp
-  | CnkVal of se list
+  | CnkVal of builtIn * se list
+
 (* "Simple" expressions as defined in the paper *)
 and se = 
   | Value of value
