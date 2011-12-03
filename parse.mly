@@ -49,27 +49,31 @@ let error msg	= failwith msg
 %%
 
 exp : 
-  IDENTIFIER                                 { Var(($1, 0)) }
-| LPAREN exp RPAREN                          { $2 }
-| exp exp                                    { Appl ($1,$2) }
-| LAMBDA IDENTIFIER DOT exp                  { Lambda( ($2,0) ,$4) }
-| LBRACE statement IN exp RBRACE             { Letrec($2,$4) }
-| COND LPAREN exp COMMA exp COMMA exp RPAREN { Cond($3,$5,$7) }
-| pfk                                        { $1 }
-| const                                      { Const($1) }
-| cnk                                        { $1 }
+  IDENTIFIER                                    { Var(($1, 0)) }
+| LPAREN exp RPAREN                             { $2 }
+| exp exp                                       { Appl ($1,$2) }
+| LAMBDA IDENTIFIER DOT exp                     { Lambda( ($2,0) ,$4) }
+| LBRACE statement IN exp RBRACE                { Letrec($2,$4) }
+| COND LPAREN exp COMMA exp COMMA exp RPAREN    { Cond($3,$5,$7) }
+| pfk                                           { $1 }
+| const                                         { Const($1) }
+| cnk                                           { $1 }
 ;
 
 statement : 
-  IDENTIFIER EQ exp                          { Bind( ($1,0) ,$3) }
-| statement STMTSEP statement                { Par($1,$3) }
+  IDENTIFIER EQ exp                             { Bind( ($1,0) ,$3) }
+| statement STMTSEP statement                   { Par($1,$3) }
 ;
 
 pfk:
-  PLUS LPAREN exp COMMA exp RPAREN           { Pfk(Add,$3,$5)}
-| MINUS LPAREN exp COMMA exp RPAREN          { Pfk(Sub,$3,$5)}
-| MULT LPAREN exp COMMA exp RPAREN           { Pfk(Mult,$3,$5)}
-| EQ LPAREN exp COMMA exp RPAREN             { Pfk(Equal,$3,$5)}
+  PLUS LPAREN exp COMMA exp RPAREN              { Pfk(Add,$3,$5)}
+| exp PLUS exp                                  { Pfk(Add,$1,$3)}
+| MINUS LPAREN exp COMMA exp RPAREN             { Pfk(Sub,$3,$5)}
+| exp MINUS exp                                 { Pfk(Sub,$1,$3)}
+| MULT LPAREN exp COMMA exp RPAREN              { Pfk(Mult,$3,$5)}
+| exp MULT exp                                  { Pfk(Mult,$1,$3)}
+| EQ LPAREN exp COMMA exp RPAREN                { Pfk(Equal,$3,$5)}
+| exp EQ exp                                    { Pfk(Equal,$1,$3)}
 ;
 
 const : 

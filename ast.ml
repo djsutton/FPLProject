@@ -94,7 +94,7 @@ let rec exp_to_str e =
   | Letrec (s,e) ->
       sprintf "{%s in %s}" (stmt_to_str s) (exp_to_str e)
   | Pfk(op, e1, e2) ->
-    sprintf "%s(%s, %s)" (opr_to_str op) (exp_to_str e1) (exp_to_str e2)
+    sprintf "%s%s%s" (exp_to_str e1) (opr_to_str op) (exp_to_str e2)
   | Cnk(bi, expList) -> 
     sprintf "%s(%s)" (builtIn_to_str bi) (expList_to_str expList)
     
