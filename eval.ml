@@ -10,6 +10,7 @@ exception ConditionalTypeError
 exception EvalTypeError
 exception PfkTypeError
 exception NotImplemented
+exception ReduceTypeError
 
 (* Checks to see if a list of expressions are all simple expression types *) 
 let rec isSimp (e:exp) : bool =
@@ -49,6 +50,7 @@ let evalPfk (op: opr) (e1:exp) (e2:exp) : exp =
     | (Const(Bool(b1)), Const(Bool(b2))) ->
       (match op with
 	| Equal -> Const(Bool(b1 = b2))
+	| _ -> raise PfkTypeError
       )
     | (Const(Bool(b1)), Const(Int(b2))) -> raise PfkTypeError
     | (Const(Int(b1)), Const(Bool(b2))) -> raise PfkTypeError
@@ -65,8 +67,7 @@ let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt =
       let s1' = alphaRenameStmt v nv s1 in
       let s2' = alphaRenameStmt v nv s2 in 
       Par(s1', s2')
-
-let rec alphaRename (v:var) (nv:var) (e:exp) : exp=  
+and alphaRename (v:var) (nv:var) (e:exp) : exp=  
   match e with 
     | Const(n) -> e
     | Var(x) -> 
@@ -77,7 +78,7 @@ let rec alphaRename (v:var) (nv:var) (e:exp) : exp=
 
     | Appl(e1, e2) -> Appl( (alphaRename v nv e1), (alphaRename v nv e2))
     | Lambda(v1, body) -> 
-      let b = alphaRename body v nv in 
+      let b = alphaRename v nv body in 
       if v1 = v then 
 	Lambda(nv, b)
       else
@@ -99,11 +100,11 @@ let rec alphaRename (v:var) (nv:var) (e:exp) : exp=
       let e2' = alphaRename v nv e2 in 
       Pfk(op, e1', e2')
     | Cnk(bIn, expList) -> 
-      List.map (alphaRename v nv) expList
+      Cnk(bIn, List.map (alphaRename v nv) expList)
 
 let mangle (e:exp) (v:var) : exp = 
   let newVar =  ( (fst v),  (snd v) +1 ) in 
-  alphaRename e v newVar
+  alphaRename v newVar e
 
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
@@ -119,6 +120,7 @@ let rec reduce (n:int) (e:exp) : exp =
 	      reduce (n-1) tExp 
 	    else
 	      reduce (n-1) fExp
+	  | _ -> raise ConditionalTypeError
 	)
       | Appl(e1, e2) -> raise NotImplemented
       | Cnk(bIn, expList) -> 
@@ -127,6 +129,7 @@ let rec reduce (n:int) (e:exp) : exp =
 	let e1' = reduce (n-1) e1 in 
 	let e2' = reduce (n-1) e2 in 
 	evalPfk op e1' e2'
+      | _ -> raise ReduceTypeError
 
 
 (*let rec eval (r: exp) : value = match r with
