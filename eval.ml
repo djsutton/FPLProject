@@ -68,6 +68,7 @@ let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt =
       let s1' = alphaRenameStmt v nv s1 in
       let s2' = alphaRenameStmt v nv s2 in 
       Par(s1', s2')
+
 and alphaRename (v:var) (nv:var) (e:exp) : exp=  
   match e with 
     | Const(n) -> e
@@ -106,6 +107,17 @@ and alphaRename (v:var) (nv:var) (e:exp) : exp=
 let mangle (e:exp) (v:var) : exp = 
   let newVar =  ( (fst v),  (snd v) +1 ) in 
   alphaRename v newVar e
+
+let mangleStmt (s:stmt) (v:var) : stmt = 
+   let newVar =  ( (fst v),  (snd v) +1 ) in 
+   alphaRenameStmt v newVar s
+
+let rec flatten (b:stmt) : stmt = 
+  match b with 
+    | Bind(x, Letrec(s, e)) ->
+      let e' = mangle(e, x) in
+      let s' = mangleStmt(s, x) in 
+      Par(Bind(x,e'), s')
 
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
