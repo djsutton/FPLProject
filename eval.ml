@@ -112,6 +112,11 @@ let mangleStmt (s:stmt) (v:var) : stmt =
    let newVar =  ( (fst v),  (snd v) +1 ) in 
    alphaRenameStmt v newVar s
 
+let rec getVars (s:stmt): var list =
+  match s with
+  | Bind(x, e) -> [x]
+  | Par(s1, s2) -> (getVars s1) @ (getVars s2)
+
 let rec flatten (b:stmt) : stmt = 
   match b with 
     | Bind(x, Letrec(s, e)) ->
