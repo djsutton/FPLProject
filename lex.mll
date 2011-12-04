@@ -41,7 +41,7 @@ rule initial = parse
 | '*'           { MULT }
 | ','           { COMMA }
 
-| ("0x")?'-'?['0'-'9']+ {
+| ['0'-'9']+ {
   let str = Lexing.lexeme lexbuf in 
   INT((int_of_string str)) }
 
