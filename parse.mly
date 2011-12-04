@@ -44,6 +44,8 @@ let error msg	= failwith msg
 %type <Ast.exp> exp
 
 %left EQ
+%left PLUS MINUS
+%left MULT
 
 
 %%
