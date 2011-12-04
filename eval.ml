@@ -117,11 +117,11 @@ let rec getVars (s:stmt): var list =
   | Bind(x, e) -> [x]
   | Par(s1, s2) -> (getVars s1) @ (getVars s2)
 
-let rec flatten (b:stmt) : stmt = 
+let rec flatten (b:stmt) (vars:var list): stmt = 
   match b with 
     | Bind(x, Letrec(s, e)) ->
-      let e' = mangle(e, x) in
-      let s' = mangleStmt(s, x) in 
+      let e' = List.fold_left e mangle vars in
+      let s' = List.fold_left s magleStmt vars in 
       Par(Bind(x,e'), s')
 
 let rec reduce (n:int) (e:exp) : exp = 
