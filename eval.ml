@@ -124,6 +124,26 @@ let rec flatten (b:stmt) (vars:var list): stmt =
       let s' = List.fold_left s magleStmt vars in 
       Par(Bind(x,e'), s')
 
+let rec lift (e:exp) : exp = 
+  let tVar = ('t',0) in
+  match e with 
+    | Letrecs(s, e1) ->
+      let s' = mangleStmt s tVar in 
+      let e1' = mangle e1 tVar in 
+      Letrec(Par(s', Bind(tVar, e1')) Var(tVar))
+    | Appl(e1, e2) ->
+      let e1' = mangle e1 tVar in 
+      let e2' = mangle e2 tVar in 
+      if isSimp e1' then 
+	Letrec(Bind(tVar, e2'), Apply(e1', Var(tVar)))
+      else
+	Letrec(Bind(tVar, e1'), Apply(Var(tVar), e2'))
+    | Cond(bVal, tExp, fExp) -> 
+      let bVal' = mangle bVal tVar in
+      let tExp' = mangle tExp tVar in 
+      let fExp' = mangle fExp tVar in
+      Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
+
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
     e 
