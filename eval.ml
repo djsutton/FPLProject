@@ -11,6 +11,7 @@ exception EvalTypeError
 exception PfkTypeError
 exception NotImplemented
 exception ReduceTypeError
+exception ApplicationTypeError
 
 (* Checks to see if a list of expressions are all simple expression types *) 
 let rec isSimp (e:exp) : bool =
@@ -42,15 +43,15 @@ let evalPfk (op: opr) (e1:exp) (e2:exp) : exp =
   match (e1, e2) with 
     | (Const(Int(n)), Const(Int(m))) -> 
       (match op with 
-	| Add -> Const(Int(n+m))
-	| Sub -> Const(Int(n-m))
-	| Mult -> Const(Int(n*m))
-	| Equal -> Const(Bool(n=m))
+    | Add -> Const(Int(n+m))
+    | Sub -> Const(Int(n-m))
+    | Mult -> Const(Int(n*m))
+    | Equal -> Const(Bool(n=m))
       ) 
     | (Const(Bool(b1)), Const(Bool(b2))) ->
       (match op with
-	| Equal -> Const(Bool(b1 = b2))
-	| _ -> raise PfkTypeError
+    | Equal -> Const(Bool(b1 = b2))
+    | _ -> raise PfkTypeError
       )
     | (Const(Bool(b1)), Const(Int(b2))) -> raise PfkTypeError
     | (Const(Int(b1)), Const(Bool(b2))) -> raise PfkTypeError
@@ -60,9 +61,9 @@ let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt =
   match s with 
     | Bind (v1, e1) -> 
       if v1 = v then
-	Bind(nv, alphaRename v nv e1)
+    Bind(nv, alphaRename v nv e1)
       else
-	Bind(v1, alphaRename v nv e1)
+    Bind(v1, alphaRename v nv e1)
     | Par (s1, s2) -> 
       let s1' = alphaRenameStmt v nv s1 in
       let s2' = alphaRenameStmt v nv s2 in 
@@ -72,18 +73,18 @@ and alphaRename (v:var) (nv:var) (e:exp) : exp=
     | Const(n) -> e
     | Var(x) -> 
       if x = v then 
-	Var(nv)
+    Var(nv)
       else
-	e
+    e
 
     | Appl(e1, e2) -> Appl( (alphaRename v nv e1), (alphaRename v nv e2))
     | Lambda(v1, body) -> 
       let b = alphaRename v nv body in 
       if v1 = v then 
-	Lambda(nv, b)
+    Lambda(nv, b)
       else
-	Lambda(v1, b)
-	
+    Lambda(v1, b)
+    
     | Cond(bVal, tExp, fExp) ->
       let nbVal = alphaRename v nv bVal in
       let ntExp = alphaRename v nv tExp in 
@@ -111,24 +112,27 @@ let rec reduce (n:int) (e:exp) : exp =
     e 
   else
     match e with 
-      | Letrec(s, body) -> raise NotImplemented
       | Cond(cond, tExp, fExp) -> 
-	let c = reduce (n-1) cond in 
-	(match c with
-	  | Const(Bool(b)) -> 
-	    if b then 
-	      reduce (n-1) tExp 
-	    else
-	      reduce (n-1) fExp
-	  | _ -> raise ConditionalTypeError
-	)
-      | Appl(e1, e2) -> raise NotImplemented
+        let c = reduce (n-1) cond in 
+        (match c with
+          | Const(Bool(b)) -> 
+            if b then 
+                reduce (n-1) tExp 
+            else
+                reduce (n-1) fExp
+          | _ -> raise ConditionalTypeError
+        )
+      | Appl(e1, e2) -> 
+        (match e1 with
+          | Lambda(var, body) -> Letrec(Bind(var,e2),e1)
+          | _ -> raise ApplicationTypeError
       | Cnk(bIn, expList) -> 
-	Cnk(bIn, List.map (reduce (n-1)) expList)
+        Cnk(bIn, List.map (reduce (n-1)) expList)
       | Pfk(op, e1, e2) -> 
-	let e1' = reduce (n-1) e1 in 
-	let e2' = reduce (n-1) e2 in 
-	evalPfk op e1' e2'
+        let e1' = reduce (n-1) e1 in 
+        let e2' = reduce (n-1) e2 in 
+        evalPfk op e1' e2'
+      | Letrec(s, body) -> raise NotImplemented
       | _ -> raise ReduceTypeError
 
 
