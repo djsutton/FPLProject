@@ -70,14 +70,14 @@ statement :
 ;
 
 pfk:
-  PLUS LPAREN exp COMMA exp RPAREN              { Pfk(Add,$3,$5)}
-| exp PLUS exp                                  { Pfk(Add,$1,$3)}
-| MINUS LPAREN exp COMMA exp RPAREN             { Pfk(Sub,$3,$5)}
-| exp MINUS exp                                 { Pfk(Sub,$1,$3)}
-| MULT LPAREN exp COMMA exp RPAREN              { Pfk(Mult,$3,$5)}
-| exp MULT exp                                  { Pfk(Mult,$1,$3)}
-| EQ LPAREN exp COMMA exp RPAREN                { Pfk(Equal,$3,$5)}
-| exp EQ exp                                    { Pfk(Equal,$1,$3)}
+  PLUS LPAREN exp COMMA exp RPAREN              { Pfk(Add,[$3;$5])}
+| exp PLUS exp                                  { Pfk(Add,[$1;$3])}
+| MINUS LPAREN exp COMMA exp RPAREN             { Pfk(Sub,[$3;$5])}
+| exp MINUS exp                                 { Pfk(Sub,[$1;$3])}
+| MULT LPAREN exp COMMA exp RPAREN              { Pfk(Mult,[$3;$5])}
+| exp MULT exp                                  { Pfk(Mult,[$1;$3])}
+| EQ LPAREN exp COMMA exp RPAREN                { Pfk(Equal,[$3;$5])}
+| exp EQ exp                                    { Pfk(Equal,[$1;$3])}
 ;
 
 const : 

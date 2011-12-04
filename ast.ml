@@ -33,7 +33,7 @@ type exp =
   | Lambda of var * exp
   | Cond of exp * exp * exp
   | Letrec of stmt * exp
-  | Pfk of opr * exp * exp
+  | Pfk of opr * exp list
   | Cnk of builtIn * exp list 
 
 (* Statment type *)
@@ -93,13 +93,18 @@ let rec exp_to_str e =
     (exp_to_str e0) (exp_to_str e1) (exp_to_str e2)
   | Letrec (s,e) ->
       sprintf "{%s in %s}" (stmt_to_str s) (exp_to_str e)
-  | Pfk(op, e1, e2) ->
-    sprintf "(%s%s%s)" (exp_to_str e1) (opr_to_str op) (exp_to_str e2)
+  | Pfk(op, expList) -> pfk_to_str op expList
   | Cnk(bi, expList) -> 
     sprintf "%s(%s)" (builtIn_to_str bi) (expList_to_str expList)
     
 and expList_to_str expList = 
   (String.concat "," (List.map exp_to_str expList))
+
+and pfk_to_str op expList = 
+    match op with
+      | Add | Sub | Mult | Equal -> 
+        sprintf "(%s%s%s)" (exp_to_str (List.nth expList 0)) (opr_to_str op) (exp_to_str (List.nth expList 1))
+      
 
 and stmt_to_str s = match s with
   | Bind(v,e) -> sprintf "%s = %s" (var_to_str v) (exp_to_str e)

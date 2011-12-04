@@ -44,8 +44,8 @@ and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
   | Bind(vName, e1) -> if vName = v then s else Bind(vName, e) 
   | Par(s1, s2) -> Par(sub_stmt e v s1, sub_stmt e v s2)
 
-let evalPfk (op: opr) (e1:exp) (e2:exp) : exp = 
-  match (e1, e2) with 
+let evalPfk (op: opr) expList : exp = 
+  match (List.nth expList 0, List.nth expList 1) with 
     | (Const(Int(n)), Const(Int(m))) -> 
       (match op with 
     | Add -> Const(Int(n+m))
@@ -60,7 +60,7 @@ let evalPfk (op: opr) (e1:exp) (e2:exp) : exp =
       )
     | (Const(Bool(b1)), Const(Int(b2))) -> raise PfkTypeError
     | (Const(Int(b1)), Const(Bool(b2))) -> raise PfkTypeError
-    | (_, _) -> Pfk(op, e1, e2)
+    | (_, _) -> Pfk(op, expList)
 
 let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt = 
   match s with 
@@ -102,10 +102,9 @@ and alphaRename (v:var) (nv:var) (e:exp) : exp=
       let e1' = alphaRename v nv e1 in 
       Letrec(s', e1')
 
-    | Pfk(op, e1, e2) -> 
-      let e1' = alphaRename v nv e1 in 
-      let e2' = alphaRename v nv e2 in 
-      Pfk(op, e1', e2')
+    | Pfk(op, expList) -> 
+      let expList' = List.map (alphaRename v nv) expList in
+      Pfk(op, expList')
     | Cnk(bIn, expList) -> 
       Cnk(bIn, List.map (alphaRename v nv) expList)
 
@@ -173,10 +172,9 @@ let rec reduce (n:int) (e:exp) : exp =
         )
       | Cnk(bIn, expList) -> 
         Cnk(bIn, List.map (reduce (n-1)) expList)
-      | Pfk(op, e1, e2) -> 
-        let e1' = reduce (n-1) e1 in 
-        let e2' = reduce (n-1) e2 in 
-        evalPfk op e1' e2'
+      | Pfk(op, expList) -> 
+        let expList' = List.map (reduce (n-1)) expList in 
+        evalPfk op expList'
       | Letrec(s, body) -> raise NotImplemented
       | _ -> raise ReduceTypeError
 
