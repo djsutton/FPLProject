@@ -55,6 +55,7 @@ exp :
 | LAMBDA IDENTIFIER DOT exp                     { Lambda( ($2,0) ,$4) }
 | LBRACE statement IN exp RBRACE                { Letrec($2,$4) }
 | COND LPAREN exp COMMA exp COMMA exp RPAREN    { Cond($3,$5,$7) }
+| IF exp THEN exp ELSE exp                      { Cond($2,$4,$6) }
 | pfk                                           { $1 }
 | const                                         { Const($1) }
 | cnk                                           { $1 }

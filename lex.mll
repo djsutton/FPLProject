@@ -20,6 +20,9 @@ rule initial = parse
 | blank { initial lexbuf }
 | "true"        { TRUE }
 | "false"       { FALSE }
+| "if"          { IF }
+| "then"        { THEN }
+| "else"        { ELSE }
 | "="           { EQ }
 | "Cond"        { COND }
 | "in"          { IN }
