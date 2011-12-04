@@ -109,4 +109,12 @@ let rec val_to_str v =
   match v with
     | Integer i -> sprintf "%d" i
     | Boolean b -> if b then "true" else "false"
-    | Funval (v,e) -> "function"
+    | Funval(v,e) -> "function"
+    | CnkVal(bi, seList) -> 
+      sprintf "%s(%s)" (builtIn_to_str bi) (seList_to_str seList) 
+and seList_to_str expList = 
+  (String.concat "," (List.map se_to_str expList))
+and se_to_str simp =
+  match simp with 
+    | Value(v) -> val_to_str v
+    | Ident(v) -> var_to_str v
