@@ -1,6 +1,9 @@
-(* CSCI 5535 HW5
+(* CSCI 5535
  * 
- * DJ Sutton
+ * Implementation of the reduction rules parallel lambda 
+ * calculus 
+ *
+ * By DJ Sutton and Matt Ripley
  *)
 
 open Ast
@@ -12,6 +15,8 @@ exception PfkTypeError
 exception NotImplemented
 exception ReduceTypeError
 exception ApplicationTypeError
+exception FlattenTypeError
+exception LiftTypeError
 
 (* Checks to see if a list of expressions are all simple expression types *) 
 let rec isSimp (e:exp) : bool =
@@ -120,29 +125,31 @@ let rec getVars (s:stmt): var list =
 let rec flatten (b:stmt) (vars:var list): stmt = 
   match b with 
     | Bind(x, Letrec(s, e)) ->
-      let e' = List.fold_left e mangle vars in
-      let s' = List.fold_left s magleStmt vars in 
+      let e' = List.fold_left mangle e vars in
+      let s' = List.fold_left mangleStmt s vars in 
       Par(Bind(x,e'), s')
+    | _ -> raise FlattenTypeError
 
 let rec lift (e:exp) : exp = 
-  let tVar = ('t',0) in
+  let tVar = ("t",0) in
   match e with 
-    | Letrecs(s, e1) ->
+    | Letrec(s, e1) ->
       let s' = mangleStmt s tVar in 
       let e1' = mangle e1 tVar in 
-      Letrec(Par(s', Bind(tVar, e1')) Var(tVar))
+      Letrec(Par(s', Bind(tVar, e1')), Var(tVar))
     | Appl(e1, e2) ->
       let e1' = mangle e1 tVar in 
       let e2' = mangle e2 tVar in 
       if isSimp e1' then 
-	Letrec(Bind(tVar, e2'), Apply(e1', Var(tVar)))
+        Letrec(Bind(tVar, e2'), Appl(e1', Var(tVar)))
       else
-	Letrec(Bind(tVar, e1'), Apply(Var(tVar), e2'))
+        Letrec(Bind(tVar, e1'), Appl(Var(tVar), e2'))
     | Cond(bVal, tExp, fExp) -> 
       let bVal' = mangle bVal tVar in
       let tExp' = mangle tExp tVar in 
       let fExp' = mangle fExp tVar in
       Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
+    | _ -> raise LiftTypeError
 
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
@@ -163,6 +170,7 @@ let rec reduce (n:int) (e:exp) : exp =
         (match e1 with
           | Lambda(var, body) -> Letrec(Bind(var,e2),e1)
           | _ -> raise ApplicationTypeError
+        )
       | Cnk(bIn, expList) -> 
         Cnk(bIn, List.map (reduce (n-1)) expList)
       | Pfk(op, e1, e2) -> 
