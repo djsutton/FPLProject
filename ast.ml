@@ -19,6 +19,8 @@ type opr =
   | Add 
   | Sub
   | Mult
+  | Intdiv
+  | Modulo
   | Equal
 
 (* Built in functions *)
@@ -76,6 +78,8 @@ let opr_to_str op =
       | Add -> "+"
       | Sub -> "-"
       | Mult -> "*"
+      | Intdiv -> "/"
+      | Modulo -> "%"
       | Equal -> "="
 
 let var_to_str v = sprintf "%s_%d" (fst v) (snd v)
@@ -102,7 +106,7 @@ and expList_to_str expList =
 
 and pfk_to_str op expList = 
     match op with
-      | Add | Sub | Mult | Equal -> 
+      | Add | Sub | Mult | Intdiv| Modulo | Equal -> 
         sprintf "(%s%s%s)" (exp_to_str (List.nth expList 0)) (opr_to_str op) (exp_to_str (List.nth expList 1))
       
 

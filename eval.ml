@@ -51,6 +51,8 @@ let evalPfk (op: opr) expList : exp =
     | Add -> Const(Int(n+m))
     | Sub -> Const(Int(n-m))
     | Mult -> Const(Int(n*m))
+    | Intdiv -> Const(Int(n/m))
+    | Modulo -> Const(Int(n mod m))
     | Equal -> Const(Bool(n=m))
       ) 
     | (Const(Bool(b1)), Const(Bool(b2))) ->

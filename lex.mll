@@ -39,6 +39,8 @@ rule initial = parse
 | '+'           { PLUS }
 | '-'           { MINUS }
 | '*'           { MULT }
+| '/'           { INTDIV }
+| '%'           { MODULO } 
 | ','           { COMMA }
 
 | ['0'-'9']+ {

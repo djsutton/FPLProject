@@ -37,6 +37,8 @@ let error msg	= failwith msg
 %token PLUS
 %token MINUS
 %token MULT
+%token INTDIV
+%token MODULO
 
 %token EOF
 
@@ -46,7 +48,7 @@ let error msg	= failwith msg
 %left ELSE
 %left EQ
 %left PLUS MINUS
-%left MULT
+%left MULT INTDIV MODULO
 
 
 %%
@@ -78,6 +80,10 @@ pfk:
 | exp MULT exp                                  { Pfk(Mult,[$1;$3])}
 | EQ LPAREN exp COMMA exp RPAREN                { Pfk(Equal,[$3;$5])}
 | exp EQ exp                                    { Pfk(Equal,[$1;$3])}
+| INTDIV LPAREN exp COMMA exp RPAREN            { Pfk(Intdiv, [$3;$5])}
+| exp INTDIV exp                                { Pfk(Intdiv, [$1;$3])}
+| MODULO LPAREN exp COMMA exp RPAREN            { Pfk(Modulo, [$3;$5])}
+| exp MODULO exp                                { Pfk(Modulo, [$1;$3])}
 ;
 
 const : 
