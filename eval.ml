@@ -156,6 +156,47 @@ let rec lift (e:exp) : exp =
       Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
     | _ -> raise LiftTypeError
 
+let rec check_sub (s:stmt) = 
+  match s with
+    | Bind(v, e) -> 
+      if isSimp e then 
+          [(v,e)]
+      else
+          []
+    | Par(s1,s2) ->
+        let left = (check_sub s1) in
+        if List.length left > 0 then
+            left
+        else
+            check_sub s2
+
+let rec check_flatten (vList : var list) (s:stmt) =
+  match s with
+    | Bind(v, Letrec(stmnt, expr)) -> [flatten s vList]
+    | Par(s1, s2) -> 
+        let left = check_flatten vList s1 in
+        if List.length left > 0 then
+            [Par(List.hd left, s2)]
+        else
+            let right = check_flatten vList s2 in
+            if List.length right > 0 then
+                [Par(s1, List.hd right)]
+            else
+                []
+    | _ -> []
+
+let reduce_letrec (s:stmt) (body:exp) : exp = 
+  let sub_list = check_sub s in
+  if List.length sub_list > 0 then 
+    let v,e = List.hd sub_list in
+    Letrec((sub_stmt e v s), (sub e v body))
+  else
+    let check = check_flatten (getVars s) s in
+    if List.length check > 0 then
+      Letrec(List.hd check, body)
+    else
+      Letrec(s, body) (* fix this *)
+
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
     e 
@@ -182,21 +223,11 @@ let rec reduce (n:int) (e:exp) : exp =
         let expList' = List.map (reduce (n-1)) expList in 
         evalPfk op expList'
       | Letrec(s, body) -> 
-	let newLetRec = reduce_letrec s body getVars(s) in
-	reduce (n-1) newLetRec
+        let newLetRec = reduce_letrec s body in
+        reduce (n-1) newLetRec
       | _ -> raise ReduceTypeError
-
-and reduce_letrec (s:stmt) (body:exp) (vList : var list) : exp = 
-  match s with 
-    | Bind(v, e) -> 
-      if isSimp e then 
-	Letrec((sub_stmt e v s), (sub e v body))
-      else
-	(match e with 
-	  | Letrec(stmnt, expr) -> flatten s vList
-	  | _ -> 
-	) 
-    | 
+        
+    
 
 (*let rec eval (r: exp) : value = match r with
     Const (Int n) -> Integer n
