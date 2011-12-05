@@ -41,13 +41,6 @@ type exp =
 (* Statment type *)
 and stmt = Bind of var * exp | Par of stmt * stmt
 
-(* Value types as defined in the paper *)
-type value =
-  | Integer of int
-  | Boolean of bool
-  | Funval of var * exp
-  | CnkVal of builtIn * se list
-
 (* Functions to convert AST into a string *)
 let string_of_const c =
   match c with
@@ -92,22 +85,8 @@ and pfk_to_str op expList =
     match op with
       | Add | Sub | Mult | Intdiv| Modulo | Equal -> 
         sprintf "(%s%s%s)" (exp_to_str (List.nth expList 0)) (opr_to_str op) (exp_to_str (List.nth expList 1))
-      
 
 and stmt_to_str s = match s with
   | Bind(v,e) -> sprintf "%s = %s" (var_to_str v) (exp_to_str e)
   | Par(s0,s1) -> sprintf "%s ; %s" (stmt_to_str s0) (stmt_to_str s1)
 
-let rec val_to_str v =
-  match v with
-    | Integer i -> sprintf "%d" i
-    | Boolean b -> if b then "true" else "false"
-    | Funval(v,e) -> "function"
-    | CnkVal(bi, seList) -> 
-      sprintf "%s(%s)" (builtIn_to_str bi) (seList_to_str seList) 
-and seList_to_str expList = 
-  (String.concat "," (List.map se_to_str expList))
-and se_to_str simp =
-  match simp with 
-    | Value(v) -> val_to_str v
-    | Ident(v) -> var_to_str v
