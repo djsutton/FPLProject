@@ -36,7 +36,7 @@ clean :
 	$(OCAMLOPT) -c $<
 
 %.ml %.mli: %.mly
-	$(OCAMLYACC) $< 
+	$(OCAMLYACC) -v $< 
 
 %.ml: %.mll
 	$(OCAMLLEX) $< 

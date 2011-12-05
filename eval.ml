@@ -28,22 +28,6 @@ let rec isSimp (e:exp) : bool =
       List.fold_left ( fun b e1 -> b && isSimp(e1) ) true eList
     | _ -> false
 
-(* substitute e for v in R *)
-let rec sub (e : exp) (v : var) (r : exp) : exp = 
-  match r with
-  | Const n -> r
-  | Var x -> if x = v then e else r
-  | Appl (e1, e2) -> Appl(sub e v e1, sub e v e2)
-  | Lambda (x, e1) -> if x = v then r else Lambda (x, sub e v e1)
-  | Cond (prem, conc, altr) ->
-        Cond (sub e v prem, sub e v conc, sub e v altr)
-  | Letrec(s, e1) -> Letrec(sub_stmt e v s, sub e v e1)
-  | _ -> raise SubTypeError
-
-and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
-  | Bind(vName, e1) -> if vName = v then s else Bind(vName, e) 
-  | Par(s1, s2) -> Par(sub_stmt e v s1, sub_stmt e v s2)
-
 let evalPfk (op: opr) expList : exp = 
   match (List.nth expList 0, List.nth expList 1) with 
     | (Const(Int(n)), Const(Int(m))) -> 
@@ -122,6 +106,26 @@ let rec getVars (s:stmt): var list =
   match s with
   | Bind(x, e) -> [x]
   | Par(s1, s2) -> (getVars s1) @ (getVars s2)
+
+(* substitute e for v in R *)
+let rec sub (e : exp) (v : var) (r : exp) : exp = 
+  match r with
+  | Const n -> r
+  | Var x -> if x = v then e else r
+  | Appl (e1, e2) -> Appl(sub e v e1, sub e v e2)
+  | Lambda (x, e1) -> if x = v then r else Lambda (x, sub e v e1)
+  | Cond (prem, conc, altr) ->
+        Cond (sub e v prem, sub e v conc, sub e v altr)
+  | Letrec(s, e1) -> 
+    if List.mem v (getVars s) then
+        r
+    else
+        Letrec(sub_stmt e v s, sub e v e1)
+  | _ -> raise SubTypeError
+
+and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
+  | Bind(vName, e1) -> Bind(vName, (sub e v e1)) 
+  | Par(s1, s2) -> Par(sub_stmt e v s1, sub_stmt e v s2)
 
 let rec flatten (b:stmt) (vars:var list): stmt = 
   match b with 
