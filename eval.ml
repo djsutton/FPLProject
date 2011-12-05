@@ -181,9 +181,22 @@ let rec reduce (n:int) (e:exp) : exp =
       | Pfk(op, expList) -> 
         let expList' = List.map (reduce (n-1)) expList in 
         evalPfk op expList'
-      | Letrec(s, body) -> raise NotImplemented
+      | Letrec(s, body) -> 
+	let newLetRec = reduce_letrec s body getVars(s) in
+	reduce (n-1) newLetRec
       | _ -> raise ReduceTypeError
 
+and reduce_letrec (s:stmt) (body:exp) (vList : var list) : exp = 
+  match s with 
+    | Bind(v, e) -> 
+      if isSimp e then 
+	Letrec((sub_stmt e v s), (sub e v body))
+      else
+	(match e with 
+	  | Letrec(stmnt, expr) -> flatten s vList
+	  | _ -> 
+	) 
+    | 
 
 (*let rec eval (r: exp) : value = match r with
     Const (Int n) -> Integer n
