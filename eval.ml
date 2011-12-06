@@ -28,6 +28,9 @@ let rec isSimp (e:exp) : bool =
       List.fold_left ( fun b e1 -> b && isSimp(e1) ) true eList
     | _ -> false
 
+(* Eval PFK terms and primitive operators. Valid combinations for *
+ * types are INT,INT or BOOL, BOOL. Operators other than equals   *
+ * are not implemented for boolean types *)
 let evalPfk (op: opr) expList : exp = 
   match (List.nth expList 0, List.nth expList 1) with 
     | (Const(Int(n)), Const(Int(m))) -> 
@@ -48,26 +51,30 @@ let evalPfk (op: opr) expList : exp =
     | (Const(Int(b1)), Const(Bool(b2))) -> raise PfkTypeError
     | (_, _) -> Pfk(op, expList)
 
+(* Alpha renaming for the statement type 
+* Replace all v with nv in s *) 
 let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt = 
   match s with 
     | Bind (v1, e1) -> 
       if v1 = v then
-    Bind(nv, alphaRename v nv e1)
+	Bind(nv, alphaRename v nv e1)
       else
-    Bind(v1, alphaRename v nv e1)
+	Bind(v1, alphaRename v nv e1)
     | Par (s1, s2) -> 
       let s1' = alphaRenameStmt v nv s1 in
       let s2' = alphaRenameStmt v nv s2 in 
       Par(s1', s2')
 
+(*  Alpha renaming for exp type.
+ * Replace all vars v with nv in expression e *) 
 and alphaRename (v:var) (nv:var) (e:exp) : exp=  
   match e with 
     | Const(n) -> e
     | Var(x) -> 
       if x = v then 
-    Var(nv)
+	Var(nv)
       else
-    e
+	e
 
     | Appl(e1, e2) -> Appl( (alphaRename v nv e1), (alphaRename v nv e2))
     | Lambda(v1, body) -> 
@@ -94,20 +101,26 @@ and alphaRename (v:var) (nv:var) (e:exp) : exp=
     | Cnk(bIn, expList) -> 
       Cnk(bIn, List.map (alphaRename v nv) expList)
 
+(* Generate a new name for a variable for alpha renaming 
+ * In this case we increment the numeric identifier in 
+ * the touple by 1 to generate a unique name  *)
 let mangle (e:exp) (v:var) : exp = 
   let newVar =  ( (fst v),  (snd v) +1 ) in 
   alphaRename v newVar e
 
+(* Generate a new name for a variable in a stmt type 
+ * Uses same technique as the regular mangle function *)
 let mangleStmt (s:stmt) (v:var) : stmt = 
    let newVar =  ( (fst v),  (snd v) +1 ) in 
    alphaRenameStmt v newVar s
 
+(* Get all vars in a statment s *) 
 let rec getVars (s:stmt): var list =
   match s with
   | Bind(x, e) -> [x]
   | Par(s1, s2) -> (getVars s1) @ (getVars s2)
 
-(* substitute e for v in R *)
+(* substitute e for v in r *)
 let rec sub (e : exp) (v : var) (r : exp) : exp = 
   match r with
   | Const n -> r
@@ -123,10 +136,13 @@ let rec sub (e : exp) (v : var) (r : exp) : exp =
         Letrec(sub_stmt e v s, sub e v e1)
   | _ -> raise SubTypeError
 
+(* Substitute for stmt type *) 
 and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
   | Bind(vName, e1) -> Bind(vName, (sub e v e1)) 
   | Par(s1, s2) -> Par(sub_stmt e v s1, sub_stmt e v s2)
 
+(* Flatten function. Generates a new stmt with all name mangling
+ * completed *)
 let rec flatten (b:stmt) (vars:var list): stmt = 
   match b with 
     | Bind(x, Letrec(s, e)) ->
@@ -135,6 +151,8 @@ let rec flatten (b:stmt) (vars:var list): stmt =
       Par(Bind(x,e'), s')
     | _ -> raise FlattenTypeError
 
+(* Lifts out a expression and stuff it into a let rec with 
+ * a mangled identifier *) 
 let rec lift (e:exp) : exp = 
   let tVar = ("t",0) in
   match e with 
@@ -156,6 +174,7 @@ let rec lift (e:exp) : exp =
       Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
     | _ -> raise LiftTypeError
 
+(* Check to see if it is possible to subtitute a stmt*)
 let rec check_sub (s:stmt) = 
   match s with
     | Bind(v, e) -> 
@@ -170,6 +189,7 @@ let rec check_sub (s:stmt) =
         else
             check_sub s2
 
+(* Check to see if we can flatten a stmt *)
 let rec check_flatten (vList : var list) (s:stmt) =
   match s with
     | Bind(v, Letrec(stmnt, expr)) -> [flatten s vList]
@@ -185,6 +205,8 @@ let rec check_flatten (vList : var list) (s:stmt) =
                 []
     | _ -> []
 
+(* Reduce a letrec first see if we can do any substitutions. If we 
+ * can't then try to flatten. Failing all of this do ... *)
 let reduce_letrec (s:stmt) (body:exp) : exp = 
   let sub_list = check_sub s in
   if List.length sub_list > 0 then 
@@ -197,6 +219,8 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
     else
       Letrec(s, body) (* fix this *)
 
+(* Reduce the expression n number of steps. When n is reached
+ * we just stop evaluating *) 
 let rec reduce (n:int) (e:exp) : exp = 
   if isSimp e || n = 0 then 
     e 
