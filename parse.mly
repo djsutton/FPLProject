@@ -91,7 +91,7 @@ pfk:
 
 const : 
   INT                                        { Int $1 }
-| MINUS INT                                  { Int (-$2) }
+| LPAREN MINUS INT RPAREN                    { Int (-$3) }
 | TRUE                                       { Bool true }
 | FALSE                                      { Bool false }
 ;
