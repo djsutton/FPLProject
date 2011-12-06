@@ -45,10 +45,13 @@ let error msg	= failwith msg
 %start exp
 %type <Ast.exp> exp
 
+%left STMTSEP
 %left ELSE
 %left EQ
 %left PLUS MINUS
 %left MULT INTDIV MODULO
+%nonassoc IDENTIFIER INT LAMBDA TRUE FALSE IF COND LPAREN LBRACE CONS DOT
+%left apply
 
 
 %%
@@ -56,7 +59,7 @@ let error msg	= failwith msg
 exp : 
   IDENTIFIER                                    { Var(($1, 0)) }
 | LPAREN exp RPAREN                             { $2 }
-| exp exp                                       { Appl ($1,$2) }
+| exp exp    %prec apply                        { Appl ($1,$2) }
 | LAMBDA IDENTIFIER DOT exp                     { Lambda( ($2,0) ,$4) }
 | LBRACE statement IN exp RBRACE                { Letrec($2,$4) }
 | COND LPAREN exp COMMA exp COMMA exp RPAREN    { Cond($3,$5,$7) }
