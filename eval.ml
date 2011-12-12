@@ -202,6 +202,21 @@ let rec check_flatten (vList : var list) (s:stmt) =
                 []
     | _ -> []
 
+let rec check_lift (s:stmt) : stmt = 
+  match s with 
+    | Bind(v, e) -> 
+      if not(isSimp e) then
+	let e' = lift e in
+	Bind(v, e')
+      else
+	s
+    | Par(s1, s2) -> 
+      let left = check_lift s1 in 
+      if left <> s1 then
+	Par(left, s2)
+      else
+	Par(s1, check_lift s2)
+
 let rec sub_once sub_list (body:exp) = 
     if List.length sub_list > 0 then 
         let v,e = List.hd sub_list in
@@ -225,7 +240,12 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
     if List.length check > 0 then
       Letrec(List.hd check, body)
     else
-      Letrec(s, body) (* fix this *)
+      if isSimp body then
+	let s' = check_lift s in 
+	Letrec(s', body)
+      else
+	let body' = lift body in 
+	Letrec(s, body')
 
 (* Reduce the expression n number of steps. When n is reached
  * we just stop evaluating *) 
