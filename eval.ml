@@ -184,11 +184,7 @@ let rec check_sub (s:stmt) =
       else
           []
     | Par(s1,s2) ->
-        let left = (check_sub s1) in
-        if List.length left > 0 then
-            left
-        else
-            check_sub s2
+        (check_sub s1)@(check_sub s2)
 
 (* Check to see if we can flatten a stmt *)
 let rec check_flatten (vList : var list) (s:stmt) =
@@ -206,13 +202,24 @@ let rec check_flatten (vList : var list) (s:stmt) =
                 []
     | _ -> []
 
+let rec sub_once sub_list (body:exp) = 
+    if List.length sub_list > 0 then 
+        let v,e = List.hd sub_list in
+        let body' = sub e v body in
+        if body' = body then
+            sub_once (List.tl sub_list) body
+        else
+            body'
+    else
+        body
+
 (* Reduce a letrec first see if we can do any substitutions. If we 
  * can't then try to flatten. Failing all of this do ... *)
 let reduce_letrec (s:stmt) (body:exp) : exp = 
   let sub_list = check_sub s in
-  if List.length sub_list > 0 then 
-    let v,e = List.hd sub_list in
-    Letrec(s, (sub e v body))
+  let body' = sub_once sub_list body in
+  if body' != body then
+    Letrec(s, body')
   else
     let check = check_flatten (getVars s) s in
     if List.length check > 0 then
@@ -222,7 +229,7 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
 
 (* Reduce the expression n number of steps. When n is reached
  * we just stop evaluating *) 
-let rec reduce (n:int) (e:exp) : exp = 
+let rec reduce (n:int) (e:exp) : exp =
   if isSimp e || n = 0 then 
     e 
   else
@@ -248,10 +255,17 @@ let rec reduce (n:int) (e:exp) : exp =
         let expList' = List.map (reduce (n-1)) expList in 
         evalPfk op expList'
       | Letrec(s, body) -> 
-        let newLetRec = reduce_letrec s body in
-        reduce (n-1) newLetRec
+        let body' = reduce n body in
+        if body'<>body then
+            reduce (n-1) (Letrec(s, body'))
+        else
+            let newLetRec = reduce_letrec s body in
+            if newLetRec <> e then
+                reduce (n-1) newLetRec
+            else
+                e
       | _ -> raise ReduceTypeError
-        
+    
     
 
 (*let rec eval (r: exp) : value = match r with
