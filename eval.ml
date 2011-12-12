@@ -229,13 +229,13 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
 
 (* Reduce the expression n number of steps. When n is reached
  * we just stop evaluating *) 
-let rec reduce (n:int) (e:exp) : exp =
+let rec reduce (n:int) (e:exp) : exp*int =
   if isSimp e || n = 0 then 
-    e 
+    e,n
   else
     match e with 
       | Cond(cond, tExp, fExp) -> 
-        let c = reduce (n-1) cond in 
+        let c,count = reduce (n-1) cond in 
         (match c with
           | Const(Bool(b)) -> 
             if b then 
@@ -246,24 +246,24 @@ let rec reduce (n:int) (e:exp) : exp =
         )
       | Appl(e1, e2) -> 
         (match e1 with
-          | Lambda(var, body) -> Letrec(Bind(var,e2),e1)
+          | Lambda(var, body) -> Letrec(Bind(var,e2),e1),(n-1)
           | _ -> raise ApplicationTypeError
         )
       | Cnk(bIn, expList) -> 
-        Cnk(bIn, List.map (reduce (n-1)) expList)
+        Cnk(bIn, (List.map fst (List.map (reduce (n-1)) expList))),(n-1)
       | Pfk(op, expList) -> 
-        let expList' = List.map (reduce (n-1)) expList in 
-        evalPfk op expList'
+        let expList' = List.map fst (List.map (reduce (n-1)) expList) in 
+        (evalPfk op expList'),(n-1)
       | Letrec(s, body) -> 
-        let body' = reduce n body in
+        let body',count = reduce n body in
         if body'<>body then
-            reduce (n-1) (Letrec(s, body'))
+            reduce count (Letrec(s, body'))
         else
             let newLetRec = reduce_letrec s body in
             if newLetRec <> e then
                 reduce (n-1) newLetRec
             else
-                e
+                e,n
       | _ -> raise ReduceTypeError
     
     
