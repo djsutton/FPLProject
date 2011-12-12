@@ -212,7 +212,7 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
   let sub_list = check_sub s in
   if List.length sub_list > 0 then 
     let v,e = List.hd sub_list in
-    Letrec((sub_stmt e v s), (sub e v body))
+    Letrec(s, (sub e v body))
   else
     let check = check_flatten (getVars s) s in
     if List.length check > 0 then
