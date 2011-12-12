@@ -129,12 +129,13 @@ let rec sub (e : exp) (v : var) (r : exp) : exp =
   | Lambda (x, e1) -> if x = v then r else Lambda (x, sub e v e1)
   | Cond (prem, conc, altr) ->
         Cond (sub e v prem, sub e v conc, sub e v altr)
+  | Pfk(op, expList) -> Pfk(op, List.map (sub e v) expList)
+  | Cnk(c, expList) -> Cnk(c, List.map (sub e v) expList)
   | Letrec(s, e1) -> 
     if List.mem v (getVars s) then
         r
     else
         Letrec(sub_stmt e v s, sub e v e1)
-  | _ -> raise SubTypeError
 
 (* Substitute for stmt type *) 
 and sub_stmt (e : exp) (v : var) (s : stmt) : stmt = match s with
