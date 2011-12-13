@@ -7,6 +7,7 @@
  *)
 
 open Ast
+open Printf
 
 exception SubTypeError
 exception ConditionalTypeError
@@ -57,9 +58,9 @@ let rec alphaRenameStmt (v:var) (nv:var) (s:stmt) : stmt =
   match s with 
     | Bind (v1, e1) -> 
       if v1 = v then
-	Bind(nv, alphaRename v nv e1)
+    Bind(nv, alphaRename v nv e1)
       else
-	Bind(v1, alphaRename v nv e1)
+    Bind(v1, alphaRename v nv e1)
     | Par (s1, s2) -> 
       let s1' = alphaRenameStmt v nv s1 in
       let s2' = alphaRenameStmt v nv s2 in 
@@ -72,9 +73,9 @@ and alphaRename (v:var) (nv:var) (e:exp) : exp=
     | Const(n) -> e
     | Var(x) -> 
       if x = v then 
-	Var(nv)
+    Var(nv)
       else
-	e
+    e
 
     | Appl(e1, e2) -> Appl( (alphaRename v nv e1), (alphaRename v nv e2))
     | Lambda(v1, body) -> 
@@ -173,7 +174,10 @@ let rec lift (e:exp) : exp =
       let tExp' = mangle tExp tVar in 
       let fExp' = mangle fExp tVar in
       Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
-    | _ -> raise LiftTypeError
+    | _ -> begin
+    print_endline (exp_to_str e);
+    end;
+    raise LiftTypeError
 
 (* Check to see if it is possible to subtitute a stmt*)
 let rec check_sub (s:stmt) = 
@@ -206,16 +210,16 @@ let rec check_lift (s:stmt) : stmt =
   match s with 
     | Bind(v, e) -> 
       if not(isSimp e) then
-	let e' = lift e in
-	Bind(v, e')
+    let e' = lift e in
+    Bind(v, e')
       else
-	s
+    s
     | Par(s1, s2) -> 
       let left = check_lift s1 in 
       if left <> s1 then
-	Par(left, s2)
+    Par(left, s2)
       else
-	Par(s1, check_lift s2)
+    Par(s1, check_lift s2)
 
 let rec sub_once sub_list (body:exp) = 
     if List.length sub_list > 0 then 
@@ -240,12 +244,12 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
     if List.length check > 0 then
       Letrec(List.hd check, body)
     else
-      if isSimp body then
-	let s' = check_lift s in 
-	Letrec(s', body)
-      else
-	let body' = lift body in 
-	Letrec(s, body')
+      let s' = check_lift s in 
+        if s' <> s then
+          Letrec(s', body)
+        else
+          let body' = lift body in 
+          Letrec(s, body')
 
 (* Reduce the expression n number of steps. When n is reached
  * we just stop evaluating *) 
@@ -266,7 +270,7 @@ let rec reduce (n:int) (e:exp) : exp*int =
         )
       | Appl(e1, e2) -> 
         (match e1 with
-          | Lambda(var, body) -> Letrec(Bind(var,e2),e1),(n-1)
+          | Lambda(var, body) -> reduce (n-1) (Letrec(Bind(var,e2),body))
           | _ -> raise ApplicationTypeError
         )
       | Cnk(bIn, expList) -> 
