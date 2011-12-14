@@ -14,7 +14,7 @@
 %-----------------------------------------------------------------------------
 
 
-\documentclass[preprint]{sigplanconf}
+\documentclass[preprint, 10pt]{sigplanconf}
 
 % The following \documentclass options may be useful:
 %
@@ -59,7 +59,7 @@ Lambda S was originally created by Jan-Willem Maessen, Arvind, R.S. Nikhil, Joe 
 The original memo that outlined the creation of Lambda S created it in 3 stages. First Lambda C, which was a basic form of parallel lambda calculus including all the basic constructs of regular lambda calculus including functional data types, letrecs, and primitive operators. Lambda B introduces things like barriers and synchronization and Lambda S implements side effects.  Due to time limitations it was only possible to implement Lambda C. 
 
 \section{Related Work}
-There has been substantial work related to the parallel lambda calculus in the sense that it provides a excellent platform for reasoning about other parallel languages such as Parallel Haskel (pH). It has also been used to explore other functional languages such as OCaml, Scheme and SML. 
+There has been substantial work related to the parallel lambda calculus in the sense that it provides a excellent platform for reasoning about other parallel languages such as Parallel Haskel (pH).\cite{pH} It has also been used to explore other functional languages such as OCaml, Scheme and SML. There has also been related work in deriving a lambda calculus that uses call by need \citep{callByNeed}, as well as other version using lazy evaluation or partial evaluation.  
 \section{Background}
 Lambda C is a pure functional language in the sense that there are no side effects. Sharing computations is accomplished by the use of Letrecs which allow a computation to be bound to an identifier and substituted in multiple places. Lambda C also supports the ability for Letrecs to be substituted within them selves there by providing a mechanism for defining a list in terms of it self. The other particulars of Lambda C are closely related to regular lambda calculus including applications, primitive operators, conditionals, and variable bindings. Lambda C also supports an array constructor that can be used for creating lists. The syntax given in the paper for lambda C is: 
 \\
