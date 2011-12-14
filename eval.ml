@@ -273,9 +273,11 @@ let rec reduce (n:int) (e:exp) : exp*int =
           | _ -> e,n
         )
       | Appl(e1, e2) -> 
-        (match e1 with
-          | Lambda(var, body) -> reduce (n-1) (Letrec(Bind(var,e2),body))
-          | _ -> e, n
+        let e1',_ = reduce (n-1) e1 in
+        let e2',_ = reduce (n-1) e2 in
+        (match e1' with
+          | Lambda(var, body) -> reduce (n-1) (Letrec(Bind(var,e2'),body))
+          | _ -> Appl(e1',e2'), n
         )
       | Cnk(bIn, expList) -> 
         Cnk(bIn, (List.map fst (List.map (reduce (n-1)) expList))),(n-1)
