@@ -159,21 +159,29 @@ let rec lift (e:exp) : exp =
   let tVar = ("t",0) in
   match e with 
     | Letrec(s, e1) ->
-      let s' = mangleStmt s tVar in 
-      let e1' = mangle e1 tVar in 
-      Letrec(Par(s', Bind(tVar, e1')), Var(tVar))
+      if not (isSimp e1) then
+        let s' = mangleStmt s tVar in 
+        let e1' = mangle e1 tVar in 
+        Letrec(Par(s', Bind(tVar, e1')), Var(tVar))
+      else
+        e
     | Appl(e1, e2) ->
       let e1' = mangle e1 tVar in 
       let e2' = mangle e2 tVar in 
-      if isSimp e1' then 
+      if not (isSimp e1) then
         Letrec(Bind(tVar, e2'), Appl(e1', Var(tVar)))
-      else
+      else if not (isSimp e2) then
         Letrec(Bind(tVar, e1'), Appl(Var(tVar), e2'))
-    | Cond(bVal, tExp, fExp) -> 
-      let bVal' = mangle bVal tVar in
-      let tExp' = mangle tExp tVar in 
-      let fExp' = mangle fExp tVar in
-      Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
+      else
+        e
+    | Cond(bVal, tExp, fExp) ->
+      if not (isSimp(bVal)) then
+          let bVal' = mangle bVal tVar in
+          let tExp' = mangle tExp tVar in 
+          let fExp' = mangle fExp tVar in
+          Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
+      else
+        e
     | _ -> begin
     print_endline (exp_to_str e);
     end;
@@ -248,8 +256,11 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
         if s' <> s then
           Letrec(s', body)
         else
-          let body' = lift body in 
-          Letrec(s, body')
+          if not (isSimp body) then
+            let body' = lift body in 
+            Letrec(s, body')
+          else
+            Letrec(s, body)
 
 (* Reduce the expression n number of steps. When n is reached
  * we just stop evaluating *) 
@@ -271,6 +282,7 @@ let rec reduce (n:int) (e:exp) : exp*int =
       | Appl(e1, e2) -> 
         (match e1 with
           | Lambda(var, body) -> reduce (n-1) (Letrec(Bind(var,e2),body))
+          | Var v -> e, n
           | _ -> raise ApplicationTypeError
         )
       | Cnk(bIn, expList) -> 
