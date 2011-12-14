@@ -60,6 +60,7 @@ The original memo that outlined the creation of Lambda S created it in 3 stages.
 
 \section{Related Work}
 There has been substantial work related to the parallel lambda calculus in the sense that it provides a excellent platform for reasoning about other parallel languages such as Parallel Haskel (pH).\cite{pH} It has also been used to explore other functional languages such as OCaml, Scheme and SML. There has also been related work in deriving a lambda calculus that uses call by need \citep{callByNeed}, as well as other version using lazy evaluation or partial evaluation.  
+
 \section{Background}
 Lambda C is a pure functional language in the sense that there are no side effects. Sharing computations is accomplished by the use of Letrecs which allow a computation to be bound to an identifier and substituted in multiple places. Lambda C also supports the ability for Letrecs to be substituted within them selves there by providing a mechanism for defining a list in terms of it self. The other particulars of Lambda C are closely related to regular lambda calculus including applications, primitive operators, conditionals, and variable bindings. Lambda C also supports an array constructor that can be used for creating lists. The syntax given in the paper for lambda C is: 
 \\
@@ -109,7 +110,7 @@ Along with the reduction rules, the original paper describing Lambda C also impl
 \section{Implementation}
 We deviated somewhat from the original implementation as defined in the paper. This was desirable due to the fact that we were more interested in attempting to evaluate a expression as close to a value as possible and not the information associated with a given expression. However we did implement similar reduction strategies. We even used some techniques defined in the print functions to allow us to extract information about a term without having to evaluate it fully. 
 
-Instead of a Print[] function, our implementation has a top level $reduce()$ function that recursively applies the reduction rules a specified number of times.  For substitution, flattening, and lifting reduction rules, we wrote helper functions that are called to perform the reduction if it is permitted.  As stated in the paper, there is more than one right way to reduce most expressions, so two different results returned by our reduce function for two different input programs may be equivalent to each other.  However, a given input program will always produce the same reduction result for a given number of steps because our reduction implementation is deterministic.  Our implementation was created in OCaml, and to facilitate the interpretation of a program we created several types to assist us during reduction. These types included a definition of a variable as a tuple containing a identifier and a integer value
+Instead of a Print[] function, our implementation has a top level $reduce$ function that recursively applies the reduction rules a specified number of times.  For substitution, flattening, and lifting reduction rules, we wrote helper functions that are called to perform the reduction if it is permitted.  As stated in the paper, there is more than one right way to reduce most expressions, so two different results returned by our reduce function for two different input programs may be equivalent to each other.  However, a given input program will always produce the same reduction result for a given number of steps because our reduction implementation is deterministic.  Our implementation was created in OCaml, and to facilitate the interpretation of a program we created several types to assist us during reduction. These types included a definition of a variable as a tuple containing a identifier and a integer value
 
 \begin{verbatim}
 (* variable type *)
@@ -141,7 +142,7 @@ and stmt = Bind of var * exp | Par of stmt * stmt
 We also extended the arithmetic operators to include integer division and modulo as it adds the ability to write more interesting programs. While this doesn’t directly effect the power of the language it was done for convince 
 
 \subsection{$\alpha$ Renaming}
-Alpha renaming was necessary to avoid name conflicts with similarly named variables as well as to allow for the ability to substitute terms without changing the meaning of the program. We accomplished this in our interpreter by representing all variables as a tuple consisting of a identifier and a integer. When alpha renaming was done on a term a new variable name was created using name mangling. Our version of name mangling worked by incrementing the integer value associated with a variable. Alpha renaming was implemented as a recursive function that generated a new name for a variable and then renamed all subsequently named variables in the syntax tree. This new variable name generation was implemented with two helper functions, $mangle$ and $mangle\_stmt$. These functions took in a expression or statement respectively and returned generated a new variable name and then called the correct form of alpha renaming on the inputted type. These functions returned a new object with all alpha renaming already completed.  This way we can guarantee that all variables in a program will be given a unique identifier and value.. Our rules for alpha renaming are (we omit the obvious definition for conditionals, letrecs, Cnk, and Pfk: 
+Alpha renaming was necessary to avoid name conflicts with similarly named variables as well as to allow for the ability to substitute terms without changing the meaning of the program. We accomplished this in our interpreter by representing all variables as a tuple consisting of a identifier and a integer. When alpha renaming was done on a term a new variable name was created using name mangling. Our version of name mangling worked by incrementing the integer value associated with a variable. Alpha renaming was implemented as a recursive function that generated a new name for a variable and then renamed all subsequently named variables in the syntax tree. This new variable name generation was implemented with two helper functions, \verb#mangle# and \verb#mangle_stmt#. These functions took in a expression or statement respectively and returned generated a new variable name and then called the correct form of alpha renaming on the inputted type. These functions returned a new object with all alpha renaming already completed.  This way we can guarantee that all variables in a program will be given a unique identifier and value.. Our rules for alpha renaming are (we omit the obvious definition for conditionals, letrecs, Cnk, and Pfk: 
 
 \begin{align}
 a &\rightarrow a \\
@@ -183,17 +184,58 @@ Because the reduction rules for Beta reduction in Lambda C would be a subset of 
 This made beta reduction implementation very simple, but it slightly increased the difficulty of reasoning about interpreting Lambda C programs because we need to remember that every function application was essentially a letrec, with all the associated complexity.
 
 \subsection{Let Rec Reduction}
-In order to give structure to the reduction, our let rec reduction strategy imitates the Unfold() operation form the paper in several ways.  First the reduction only proceeds to a specific depth which is defined by an input to the function.  Second, the variables bound in a let rec are substituted only into the body of the letrec and not into other expressions that may be used in the parallel binding.  This allowed us to control a potentially exponential expansion in the size of our reduction term at each step.  The recursive reduction step for a letrec proceeds in several parts.  First, the body of the letrec is reduced as far as possible.  Second, simple expressions bound in the letrec are substituted into the body until substitution no longer changes the body. Third, inner letrec blocks which are bound to variables are removed using block flattening.  Fourth, non-simple expressions in statements are lifted into into variable bindings in nested letrecs. At each step in this process, if any reduction is made, then the implementation recurses on the new expression and the process starts over again.
+In order to give structure to the reduction, our let rec reduction strategy imitates the Unfold() operation form the paper in several ways.  First the reduction only proceeds to a specific depth which is defined by an input to the function.  Second, the variables bound in a let rec are substituted only into the body of the letrec and not into other expressions that may be used in the parallel binding.  This allowed us to control a potentially exponential expansion in the size of our reduction term at each step.  The recursive reduction step for a letrec proceeds in several parts.  First, the body of the letrec is reduced as far as possible.  Second, simple expressions bound in the letrec are substituted into the body until substitution no longer changes the body. Third, inner letrec blocks which are bound to variables are removed using block flattening.  Fourth, non-simple expressions are lifted into into variable bindings in nested letrecs. At each step in this process, if any reduction is made, then the implementation recurses on the new expression and the process starts over again.
 
 These reduction strategies have some nice effects on the properties of the reduced expressions.  For example , our implementation performs the following as one step in a reduction:
 \begin{center}
 ${x=Cons(1,y)\ in\ {y=Cons(2,x)\ in\ x}} \rightarrow 
-{x=Cons(1,y)\ in {y=Cons(2,Cons(1,y))\ in Cons(1,y)}}$
+{x=Cons(1,y)\ in\ {y=Cons(2,Cons(1,y))\ in\ Cons(1,y)}}$
 \end{center}
 
 This shows that choosing to substitute expressions bound to variable in the outer letrec into the inner letrec has the effect of closing the inner let rec so that it no longer uses any variables from the outer scope.  In effect, the outer letrec could now be discarded if we were not concerned with side effects.
 
 \section{Results and Conclusions}
+Because of our strategy to control the reduction and recursion, our implementation behaves in a manner similar to a partial evaluator.  certain expressions are partly reduced, and then left alone until a substitution allows further reduction.  If the recursion limit is reached, then some expressions may also be left in a partially evaluated state even thought they might have been fully evaluated with more effort. For example, the input 
+\begin{verbatim}
+{x=1 in {y=2 in x+y}}
+\end{verbatim}
+goes through the partially evaluated state
+\begin{verbatim}
+{x = 1 in {y = 2 in (x+2)}}
+\end{verbatim}
+before producing the output
+\begin{verbatim}
+{x = 1 in {y = 2 in 3}}
+\end{verbatim}
+The inner letrec is thus partially evaluated before the outer leterc supplies the rest of the information.  If the recursion had reached its depth limit before the final  reduction, we would have been left with a partially evaluated expression embedded in the context needed to complete the remaining reductions, because the expressions bound in the letrecs are guaranteed by the reduction rules to always be retained. This retains semantic equivalence without guaranteeing anything else about the resulting state of the program.
+
+The  partial nature of our reduction becomes more relevant when we examine some examples from \cite{lambdas} such as the reduction of infinite lists.  For example, the program
+\begin{verbatim}
+{x=Cons(1,y) in {y=Cons(2,x) in x}}
+\end{verbatim}
+reduces to 
+\begin{verbatim}
+{x = Cons(1,y) in {y = Cons(2,Cons(1,y)) in 
+Cons(1,Cons(2,Cons(1,y)))}}
+\end{verbatim}
+
+under 2 reductions.  There are two interesting reductions to note here. First the statement \verb#y=Cons(2,x)# partially evaluates to \verb#y = Cons(2,Cons(1,y))#.  this partial evaluation stopped because when we are reducing, we do not substitute the value for y into its own bound expression or any parallel bindings it may have.  Second, the expression \verb#Cons(1,Cons(2,Cons(1,y)))# is partially evaluated because the reduction recursion depth limit was reached. This term is still semantically equivalent both to the original letrec body, and to the full reduction, but clearly  full reduction would not be desirable.
+
+One consequence of the requirement to retain every expression exactly once is that reduction rules tend to generate sequences of nested letrecs  which then interfere with some other reductions. For example, the following input for a factorial function
+\begin{verbatim}
+{f = lambda n.(if n=0 then 
+1 else n * (f (n-1))) in f 1}
+\end{verbatim}
+generates  this output:
+\begin{verbatim}
+{f_0 = (lambda n_0. (
+if (n_0=0) then 1 
+else (n_0*(f_0 (n_0-1))))) in 
+{n_0 = 1 in (1*{n_0 = 0 in 1})}}
+\end{verbatim}
+
+The  expression \verb# 1*{n_0 = 0 in 1}# at then end of this result shows that this input would have been correctly and fully if there was a reduction rule to somehow extract the body of a letrec, but instead it is only possible to partially evaluate to this point. The absence of such a rule lead us to conclude that the Lambda C language  is not meant to efficiently express computations, but is intended more to reason about areas like parallel list construction via the \verb#Cons()# constructor.
+
 
 
 % We recommend abbrvnat bibliography style.
