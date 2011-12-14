@@ -44,25 +44,25 @@
 \maketitle
 
 \begin{abstract}
-This is the text of the abstract.
+The Lambda calculus provides a excellent platform for reasoning about potential compiler optimizations. In this paper we present a partial implementation of a Lmabda S interpreter in OCaml. Lambda S, a parallel version of the lambda calculus allows for reasoning about potential compiler optimizations that could allow for parallel execution of code. It also provides a concise way for expressing a infinite set of values. Lambda S was defined in terms of 3 sub languages, Lambda C, Lambda B and finally Lambda S. In this paper we present our implementation of Lambda C including Letrecs, functional data structures, primitive arithmetic operators and conditionals. 
 \end{abstract}
 
-\category{CR-number}{subcategory}{third-level}
-
 \terms
-term1, term2
+Lambda Calculus, Parallel, Lazy Evaluation
 
 \keywords
-keyword1, keyword2
+Programming Languages, Parallel, Lambda Calculus, Lazy Evaluation
 
 \section{Introduction}
+Lambda S was originally created by Jan-Willem Maessen, Arvind, R.S. Nikhil, Joe Stoy in their memo, Lambda-S: an implicitly parallel lambda calculus with recursive bindings, synchronization and side effects. Their paper presented a version of the lambda calculus that was implicitly parallel in the sense that it supported the ability for multiple statements in the language to be executed in a parallel fashion while preserving side effects and not duplicating un necessary computation. Another of its unique features was recursive bindings that allowed for one to easily express a infinite list in a very finite manner.  Lambda S also supported synchronization constructs, garbage collection, and side effects. Ideally Lambda S was created to function as a formal basis for parallel programming languages such as parallel Haskell. \citep{lambdas} 
 
-The text of the paper begins here.
+The original memo that outlined the creation of Lambda S created it in 3 stages. First Lambda C, which was a basic form of parallel lambda calculus including all the basic constructs of regular lambda calculus including functional data types, letrecs, and primitive operators. Lambda B introduces things like barriers and synchronization and Lambda S implements side effects.  Due to time limitations it was only possible to implement Lambda C. 
 
 \section{Related Work}
-
+There has been substantial work related to the parallel lambda calculus in the sense that it provides a excellent platform for reasoning about other parallel languages such as Parallel Haskel (pH). It has also been used to explore other functional languages such as OCaml, Scheme and SML. 
 \section{Background}
-text 
+Lambda C is a pure functional language in the sense that there are no side effects. Sharing computations is accomplished by the use of Letrecs which allow a computation to be bound to an identifier and substituted in multiple places. Lambda C also supports the ability for Letrecs to be substituted within them selves there by providing a mechanism for defining a list in terms of it self. The other particulars of Lambda C are closely related to regular lambda calculus including applications, primitive operators, conditionals, and variable bindings. Lambda C also supports an array constructor that can be used for creating lists. The syntax given in the paper for lambda C is: 
+\\
 \\
 $Expressions$ \cite{lambdas}
 \begin{align}
@@ -84,6 +84,8 @@ S\ ::&= \varepsilon\\
 &|\ S;S 
 \end{align}
 \\
+Lambda C makes a distinction between normal expressions and simple expressions. A simple expression can be though of as the union of the identifier and value types. This simple expression type is required Lambda C define some of its reduction rules in terms of instantiation meaning that a variable and identifier needs to be uniquely instantiated before it is used in the body of a expression. As a result it is not possible to instantiate arbitrary expressions, hence the simple expression type. Lambda C also defines equivalence rules that allow for expressions to be re arranged or executed in any order. 
+\\
 $alpha\ renaming$ 
 \begin{align} 
 \lambda x.e &\equiv \lambda t.(e[t/x]) \\
@@ -98,13 +100,23 @@ S_{1} ; (S_{2} ; S_{3}) &\equiv (S_{1} ; S_{2}) ; S_{3}
 \end{align}
 
 \section{Lambda C Reduction Rules}
+Because Lambda C is used as a basis for Lambda B and Lambda S, which are designed to include synchronization barriers and side effects, the reduction principles for Lambda C are somewhat more strict that those of normal lambda calculus.  For example, an expression cannot be duplicated (via substitution) unless it it a simple expression (a special subset of expressions encompassing variables and values)  that has no possibility of incurring side effects.  Additionally it is also not permitted to remove a variable binding just because that variable is not used, as this might discard side effects of the expression bound to the variable.
+
+Since programs in Lambda C may never exit, it is important to control the reduction depth to prevent infinitely reducing cyclic terms. This was left as a exercise to the reader. We discuss out particular strategy in the implementation section.
+
+Along with the reduction rules, the original paper describing Lambda C also implemented several print functions that are used to reason about the information value of a given term in program. The idea being that once the maximum amount of information had been extracted from a term there as no reason to continue reduction. Termination in Lambda C is formally defined as the state when performing print on a expression tree no longer produces any new information.  This print function goes through the syntax tree of the a program an replaces certain terms with place holder symbols. In particular lambda expressions and Letrec causes are replaced with a $\lambda$ and $\bot$ respectively.
 
 \section{Implementation}
+We deviated somewhat from the original implementation as defined in the paper. This was desirable due to the fact that we were more interested in attempting to evaluate a expression as close to a value as possible and not the information associated with a given expression. However we did implement similar reduction strategies. We even used some techniques defined in the print functions to allow us to extract information about a term without having to evaluate it fully. 
+
+Instead of a Print[] function, our implementation has a top level $reduce()$ function that recursively applies the reduction rules a specified number of times.  For substitution, flattening, and lifting reduction rules, we wrote helper functions that are called to perform the reduction if it is permitted.  As stated in the paper, there is more than one right way to reduce most expressions, so two different results returned by our reduce function for two different input programs may be equivalent to each other.  However, a given input program will always produce the same reduction result for a given number of steps because our reduction implementation is deterministic.  Our implementation was created in OCaml, and to facilitate the interpretation of a program we created several types to assist us during reduction. These types included a definition of a variable as a tuple containing a identifier and a integer value
 
 \begin{verbatim}
 (* variable type *)
 type var  = string * int
 \end{verbatim}
+
+a general expression type (exp) that contained
 
 \begin{verbatim}
 (* expression type *)
@@ -119,14 +131,67 @@ type exp =
   | Cnk of builtIn * exp list 
 \end{verbatim}
 
+and a Statement type that contained: 
+
+\begin{verbatim}
+(* Statment type *)
+and stmt = Bind of var * exp | Par of stmt * stmt
+\end{verbatim}
+
+We also extended the arithmetic operators to include integer division and modulo as it adds the ability to write more interesting programs. While this doesn’t directly effect the power of the language it was done for convince 
+
 \subsection{$\alpha$ Renaming}
+Alpha renaming was necessary to avoid name conflicts with similarly named variables as well as to allow for the ability to substitute terms without changing the meaning of the program. We accomplished this in our interpreter by representing all variables as a tuple consisting of a identifier and a integer. When alpha renaming was done on a term a new variable name was created using name mangling. Our version of name mangling worked by incrementing the integer value associated with a variable. Alpha renaming was implemented as a recursive function that generated a new name for a variable and then renamed all subsequently named variables in the syntax tree. This new variable name generation was implemented with two helper functions, $mangle$ and $mangle\_stmt$. These functions took in a expression or statement respectively and returned generated a new variable name and then called the correct form of alpha renaming on the inputted type. These functions returned a new object with all alpha renaming already completed.  This way we can guarantee that all variables in a program will be given a unique identifier and value.. Our rules for alpha renaming are (we omit the obvious definition for conditionals, letrecs, Cnk, and Pfk: 
+
+\begin{align}
+a &\rightarrow a \\
+x &\rightarrow x'\ \ iff\ x = v\\
+e_{1}\ e_{2} &\rightarrow e'_{1}\ e'_{2}\\
+\lambda x.e &\rightarrow  \lambda x'.e' iff x = v\\
+\lambda x.e &\rightarrow  \lambda x.e' iff x \neq v
+\end{align}
+
+Where v is the variable that could potentially be in conflict. Any $e'$ or $x'$ is the expression after $\alpha$ renaming as occurred. The rules for alpha renaming statements are very simple. The alpha rename for statements simply recurses through the tree renaming all variables it finds. 
 
 \subsection{Substitution}
+Substitution allows us to reduce Simple Expressions by replacing uses of a identifier with its most reduced value. Substitution or instantiation is only valid for simple expressions because if we were allowed to substitute arbitrary expressions there would be incorrect behavior in certain cases such as attempting to substitute a application into a expression using a that variable it would duplicate the application multiple times. There by creating unnecessary computation and in the worst case could change the semantics of the program if it has side effects. 
+
+We implemented two forms of substitution. The first form was made to substitute a a simple expression into a general expression type. In general this function recurses and substitutes all instances of a simple expression into a general expression. We omit the obvious reductions for constant types, conditionals, constructors, and primitive 
+operators.   
+
+\begin{align}
+v &\rightarrow v'\ iff\ x = v\\
+\lambda x.e &\rightarrow \lambda x.e'\ iff\ x = v\\
+{ e\ in\ S } &\rightarrow {e'\ in\ S'}\ iff\ v \ni\ freevars(e)
+\end{align}
+
+For the case of a variable substitution is only performed if the variable being substituted already matches a variable in this expression. The lambda rule allows for substitution under lambdas. Finally the letrec rule only performs substitution if v is not in the free vars of S. As before e', v' or S' indicate that substitution has occurred for that term 
+
+The second form of substitution was used to substitute a statement type into a general expression type. The rules for substituting statement were implemented as
+\begin{align}
+x=a &\rightarrow x=a'\\
+S_{1} ; s_{2} &\rightarrow = S'_{1} ; S'_{1}
+\end{align}
+where a' and S' are terms that have undergone substitution. 
 
 \subsection{$\beta$-let reduction}
+Because the reduction rules for Beta reduction in Lambda C would be a subset of the rules for letrecs,  the reduction rules simply convert it to a letrec binding the argument to the paramenter in the body of the lambda. Formally this beta let rec reduction: 
+\begin{equation}
+(\lambda x.e_{1})e_{2} \rightarrow \lbrace t = e_{2}\ in\ e_{1}[t/x] \rbrace
+\end{equation}
+
+This made beta reduction implementation very simple, but it slightly increased the difficulty of reasoning about interpreting Lambda C programs because we need to remember that every function application was essentially a letrec, with all the associated complexity.
 
 \subsection{Let Rec Reduction}
-$(\lambda x.e_{1})e_{2} \rightarrow \lbrace t = e_{2}\ in\ e_{1}[t/x] \rbrace$
+In order to give structure to the reduction, our let rec reduction strategy imitates the Unfold() operation form the paper in several ways.  First the reduction only proceeds to a specific depth which is defined by an input to the function.  Second, the variables bound in a let rec are substituted only into the body of the letrec and not into other expressions that may be used in the parallel binding.  This allowed us to control a potentially exponential expansion in the size of our reduction term at each step.  The recursive reduction step for a letrec proceeds in several parts.  First, the body of the letrec is reduced as far as possible.  Second, simple expressions bound in the letrec are substituted into the body until substitution no longer changes the body. Third, inner letrec blocks which are bound to variables are removed using block flattening.  Fourth, non-simple expressions are lifted into into variable bindings in nested letrecs. At each step in this process, if any reduction is made, then the implementation recurses on the new expression and the process starts over again.
+
+These reduction strategies have some nice effects on the properties of the reduced expressions.  For example , our implementation performs the following as one step in a reduction:
+\begin{center}
+${x=Cons(1,y)\ in\ {y=Cons(2,x)\ in\ x}} \rightarrow 
+{x=Cons(1,y)\ in {y=Cons(2,Cons(1,y))\ in Cons(1,y)}}$
+\end{center}
+
+This shows that choosing to substitute expressions bound to variable in the outer letrec into the inner letrec has the effect of closing the inner let rec so that it no longer uses any variables from the outer scope.  In effect, the outer letrec could now be discarded if we were not concerned with side effects.
 
 \section{Results and Conclusions}
 
