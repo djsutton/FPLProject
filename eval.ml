@@ -182,10 +182,7 @@ let rec lift (e:exp) : exp =
           Letrec(Bind(tVar, bVal'), Cond(Var(tVar), tExp', fExp'))
       else
         e
-    | _ -> begin
-    print_endline (exp_to_str e);
-    end;
-    raise LiftTypeError
+    | _ -> e
 
 (* Check to see if it is possible to subtitute a stmt*)
 let rec check_sub (s:stmt) = 
@@ -256,11 +253,7 @@ let reduce_letrec (s:stmt) (body:exp) : exp =
         if s' <> s then
           Letrec(s', body)
         else
-          if not (isSimp body) then
-            let body' = lift body in 
-            Letrec(s, body')
-          else
-            Letrec(s, body)
+          Letrec(s, body)
 
 (* Reduce the expression n number of steps. When n is reached
  * we just stop evaluating *) 
@@ -277,13 +270,12 @@ let rec reduce (n:int) (e:exp) : exp*int =
                 reduce (n-1) tExp 
             else
                 reduce (n-1) fExp
-          | _ -> raise ConditionalTypeError
+          | _ -> e,n
         )
       | Appl(e1, e2) -> 
         (match e1 with
           | Lambda(var, body) -> reduce (n-1) (Letrec(Bind(var,e2),body))
-          | Var v -> e, n
-          | _ -> raise ApplicationTypeError
+          | _ -> e, n
         )
       | Cnk(bIn, expList) -> 
         Cnk(bIn, (List.map fst (List.map (reduce (n-1)) expList))),(n-1)
